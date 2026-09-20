@@ -18,7 +18,7 @@ PY = sys.executable or 'python3'
 TOKEN = secrets.token_urlsafe(16)
 # Set this to your own page to show a support link in the window and the README.
 # Left as the placeholder it renders nothing, so a wrong link can never ship.
-SUPPORT_URL = 'https://buymeacoffee.com/SET-ME'
+SUPPORT_URL = 'https://buymeacoffee.com/prismprints'
 IDLE_TIMEOUT = 45.0
 _last_seen = [time.time()]
 

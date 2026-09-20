@@ -158,7 +158,7 @@ almost everything here is a file-format bug and they are hard to guess at.
 ## Support
 
 Prism is free and there are no accounts, licence keys or telemetry. If it saved
-you a failed print, [buy me a coffee](https://buymeacoffee.com/SET-ME).
+you a failed print, [buy me a coffee](https://buymeacoffee.com/prismprints).
 
 ## Licence
 
