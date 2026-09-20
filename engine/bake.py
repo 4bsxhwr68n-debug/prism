@@ -66,6 +66,16 @@ TYPES = ['PLA','PLA-CF','PLA-SILK','PETG','PETG-CF','ABS','ASA','TPU','PA','PET'
 # Printers with a vendor colour-blending mode. The blend filaments are
 # deliberately NOT part of pick_filaments: they are semi-translucent, so the
 # 'decorative' rule there excludes them from being anyone's default PLA.
+# Standing per-printer preferences, applied after the source's own settings.
+# Only for machines whose good values are actually known; everything else keeps
+# whatever its vendor process profile ships.
+PRINTER_DEFAULTS = {
+ k: {'sparse_infill_pattern':'gyroid',
+     'support_interface_top_layers':'3',
+     'support_top_z_distance':'0.25'}
+ for k in ('u1','k2','k2plus','k2pro')
+}
+
 SPECTRUM = {
  'u1': {'label':'Full Spectrum', 'vendor':'Snapmaker',
         'preset':'Snapmaker PLA Full Spectrum @U1 0.4 nozzle',
@@ -310,6 +320,10 @@ def main():
                  'slice_info':d['slice_info'],'enums':enum_cache[bkey],
                  'default_colour':'#FFFFFF' if key=='u1' else '#000000',
                  'template':tpl,'filaments':fils}
+            if key in PRINTER_DEFAULTS:
+                enums_for = rec['enums']
+                rec['defaults'] = {k: v for k, v in PRINTER_DEFAULTS[key].items()
+                                   if not enums_for.get(k) or v in enums_for[k]}
             if key in SPECTRUM:
                 spec=SPECTRUM[key]
                 try:

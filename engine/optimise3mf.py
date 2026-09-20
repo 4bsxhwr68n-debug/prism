@@ -839,7 +839,8 @@ def apply_spectrum(out, rec, n, spectrum, plan, notes):
     return palette
 
 
-def build_project_settings(src, rec, single, plan, notes, spectrum=None):
+def build_project_settings(src, rec, single, plan, notes, spectrum=None,
+                           keep_source=False):
     tpl = rec['template']
     out = dict(tpl)
     fil_table = rec['filaments']
@@ -895,7 +896,7 @@ def build_project_settings(src, rec, single, plan, notes, spectrum=None):
         out['flush_volumes_vector'] = [tpl['flush_volumes_vector'][0] if tpl['flush_volumes_vector'] else '140'] * (2 * n)
 
     enums = rec['enums']
-    carried, dropped = [], []
+    carried, dropped, carried_keys = [], [], set()
     for k in CARRY_KEYS:
         if not src or k not in src or k not in tpl: continue
         v = src[k]
@@ -905,9 +906,32 @@ def build_project_settings(src, rec, single, plan, notes, spectrum=None):
             dropped.append(f"{k}={v} (not supported on {rec['label']})")
             continue
         out[k] = v
+        carried_keys.add(k)
         carried.append(f"{k}={v}")
     if carried: notes.append("carried: " + ", ".join(carried))
     if dropped: notes.append("dropped: " + ", ".join(dropped))
+
+    # Standing preferences for this machine. They run after the carry, so they
+    # are the last word: these are the operator's settings for their own
+    # printer, not the designer's guess about someone else's. Anything they
+    # override is named, so nothing changes silently. --keep-source turns them
+    # off and leaves the source and vendor profile to decide.
+    applied = []
+    for k, v in sorted((rec.get('defaults') or {}).items()):
+        if keep_source or k not in out:
+            continue
+        if k in ENUM_KEYS and enums.get(k) and str(v) not in enums[k]:
+            notes.append(f"default {k}={v} not supported on {rec['label']} — "
+                         f"left at {out[k]}")
+            continue
+        was = out.get(k)
+        if str(was) == str(v):
+            continue
+        out[k] = str(v)
+        applied.append(f"{k}={v}" + (f" (source asked for {was})"
+                                     if k in carried_keys else f" (was {was})"))
+    if applied:
+        notes.append("printer defaults: " + ", ".join(applied))
 
     # mode application
     out['layer_height'] = str(plan['lh'])
@@ -947,7 +971,7 @@ def inject_object_layer_height(xml_text, objid, value):
 
 
 def convert(src_path, rec, key, mode, single, dome_override, skip_analyse,
-            out_path=None, spectrum=None):
+            out_path=None, spectrum=None, keep_source=False):
     stem = re.sub(r'\.3mf$', '', os.path.basename(src_path), flags=re.I)
     suffix = key.upper() + ('-FS' if spectrum else '')
     out_path = out_path or os.path.join(os.path.dirname(src_path),
@@ -982,7 +1006,7 @@ def convert(src_path, rec, key, mode, single, dome_override, skip_analyse,
             plan['dome_lh'] = dome_override
 
         new_cfg, nslots = build_project_settings(src_cfg, rec, single, plan,
-                                                 notes, spectrum)
+                                                 notes, spectrum, keep_source)
         os.makedirs(os.path.dirname(sp), exist_ok=True)
         json.dump(new_cfg, open(sp, 'w', encoding='utf-8', newline='\n'), indent=4)
 
@@ -1148,6 +1172,9 @@ def main():
     ap.add_argument('--dome', default=None,
                     help="override dome-object layer height ('off' disables)")
     ap.add_argument('--no-analyse', action='store_true')
+    ap.add_argument('--keep-source', action='store_true',
+                    help="skip this printer's standing defaults and keep the "
+                         "source and vendor values")
     ap.add_argument('--out')
     ap.add_argument('files', nargs='*')
     a = ap.parse_args()
@@ -1261,7 +1288,7 @@ def main():
         ap.error('--out only valid with a single input file')
     for f in a.files:
         convert(os.path.abspath(f), rec, key, mode, single, a.dome,
-                a.no_analyse, a.out, spectrum)
+                a.no_analyse, a.out, spectrum, a.keep_source)
 
 
 if __name__ == '__main__':

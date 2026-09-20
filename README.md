@@ -98,6 +98,14 @@ Or drop `.3mf` files straight onto the app icon for the quick path.
 - Never modifies geometry. It is hash-verified on every run, and the plate,
   object and instance structure is asserted intact.
 
+Some printers carry standing defaults, applied after the source's own settings
+because they are your preferences for your own machine rather than the
+designer's guess about someone else's. The Snapmaker U1 and the Creality K2
+family get gyroid infill, 3 top interface layers and a 0.25mm top Z distance for
+supports. Anything they override is named in the run output, so nothing changes
+quietly, and `--keep-source` turns them off. Other printers keep whatever their
+vendor process profile ships, because the right values there are not known yet.
+
 Three modes: **speed** for coarser layers, **balanced** as the sensible default,
 **quality** for the finest layers plus ironing on large flat tops. A project
 authored finer than the mode keeps its finer layer height; only speed coarsens.
@@ -139,6 +147,7 @@ filaments; opaque ones stripe on shallow slopes.
     --spectrum-colour C         #RRGGBB, a palette id, or a name like Teal
     --spectrum-step MM | off    layer height in painted zones
     --spectrum-biases 25,50,75  blend strengths per pair
+    --keep-source               ignore this printer's standing defaults
     --dome off|H                override the rounded-top layer height
     --out PATH                  explicit output path
 
