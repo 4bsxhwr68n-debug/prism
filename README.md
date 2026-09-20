@@ -38,18 +38,33 @@ slicer prints them. You never mix by hand and you never paint.
 
 Adding one is a data job, not a code job: see [rebuilding the printer data](#rebuilding-the-printer-data).
 
-## Install
+## Build it
 
-**macOS.** Download the release, drag `Prism.app` where you like, double-click
-it. On first run macOS may say it is from an unidentified developer: right-click
-the app and choose Open. Nothing to install, it uses the Python already on your
-Mac.
+There is no packaged download yet, so build it from source. It takes about ten
+seconds and needs nothing installed beyond what your machine already has.
 
-**Windows.** Download `Prism (Windows).zip`, unzip it anywhere, double-click
-`Prism.bat`. You need Python 3 from [python.org](https://www.python.org/downloads/)
-or the Microsoft Store. No packages, no pip.
+    git clone https://github.com/4bsxhwr68n-debug/prism.git
+    cd prism
+    ./macos/build.sh                 # writes ~/Desktop/Prism.app
+    ./windows/build.sh               # writes ~/Desktop/Prism (Windows).zip
 
-**Build the Mac app from source.** `./macos/build.sh`
+Pass a path to either script to put the result somewhere else.
+
+`macos/build.sh` compiles the droplet with `osacompile`, copies the engine and
+printer data into the bundle, sets the bundle identity and ad-hoc signs it. It
+needs macOS, because `osacompile` and `codesign` are macOS tools.
+`windows/build.sh` only zips files, so it runs anywhere.
+
+**Running it.** Double-click `Prism.app` on macOS, or `Prism.bat` on Windows. On
+first run macOS may say the app is from an unidentified developer, because it is
+ad-hoc signed rather than notarised: right-click it and choose Open.
+
+**Requirements.** macOS uses the Python already on your Mac. Windows needs
+Python 3 from [python.org](https://www.python.org/downloads/) or the Microsoft
+Store. No packages, no pip, no virtualenv.
+
+**Or skip the app.** The engine is a plain script and works on its own:
+`python3 engine/optimise3mf.py --interactive yourfile.3mf`
 
 ## Use
 
