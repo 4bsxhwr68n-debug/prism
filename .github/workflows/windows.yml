@@ -1,0 +1,67 @@
+name: Windows build
+
+# Builds Prism.exe on a real Windows machine, because PyInstaller cannot
+# cross-compile and this project is developed on a Mac. Runs on every tag, and
+# on demand so the build can be checked without cutting a release.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install PyInstaller
+        run: pip install --upgrade pyinstaller
+
+      - name: Build Prism.exe
+        run: |
+          pyinstaller --onefile --console --name Prism `
+            --distpath dist `
+            --paths engine `
+            --add-data "engine/data;data" `
+            --hidden-import gui `
+            --hidden-import optimise3mf `
+            --hidden-import mixer `
+            windows/prism_win.py
+
+      - name: Smoke test the binary
+        shell: pwsh
+        run: |
+          $n = (& ./dist/Prism.exe --engine --list | Measure-Object -Line).Lines
+          if ($n -lt 20) { throw "expected the printer list, got $n lines" }
+          Write-Host "printer list: $n entries"
+          & ./dist/Prism.exe --engine --printer u1 --spectrum-list | Select-Object -First 3
+
+      - name: Package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path "pkg/Prism (Windows)" | Out-Null
+          Copy-Item dist/Prism.exe "pkg/Prism (Windows)/Prism.exe"
+          Copy-Item README.md "pkg/Prism (Windows)/README.txt"
+          $tag = "${{ github.ref_name }}"
+          if (-not $tag.StartsWith("v")) { $tag = "dev" }
+          Compress-Archive -Path "pkg/Prism (Windows)" -DestinationPath "Prism-$tag-Windows.zip"
+          Get-ChildItem *.zip | ForEach-Object { "{0}  {1:N0} bytes" -f $_.Name, $_.Length }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Prism-Windows
+          path: Prism-*-Windows.zip
+
+      - name: Attach to the release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload ${{ github.ref_name }} (Get-Item Prism-*-Windows.zip).Name --clobber
+        shell: pwsh

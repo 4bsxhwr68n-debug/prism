@@ -12,9 +12,14 @@ dropped on the icon, and a 20MB model never has to move.
 import http.server, json, os, re, secrets, socket, subprocess, sys, threading
 import time, webbrowser
 
-HERE = os.path.dirname(os.path.abspath(__file__))
+# Frozen into a single Windows .exe, sys.executable IS that exe and there is no
+# optimise3mf.py on disk, so the engine is re-entered through the exe itself
+# with a sentinel argument. From source it stays a plain python call.
+FROZEN = bool(getattr(sys, 'frozen', False))
+HERE = getattr(sys, '_MEIPASS', None) or os.path.dirname(os.path.abspath(__file__))
 ENGINE = os.path.join(HERE, 'optimise3mf.py')
 PY = sys.executable or 'python3'
+ENGINE_CMD = [sys.executable, '--engine'] if FROZEN else [PY, ENGINE]
 TOKEN = secrets.token_urlsafe(16)
 # Set this to your own page to show a support link in the window and the README.
 # Left as the placeholder it renders nothing, so a wrong link can never ship.
@@ -24,8 +29,11 @@ _last_seen = [time.time()]
 
 
 def engine(args, timeout=900):
-    p = subprocess.run([PY, ENGINE] + args, capture_output=True, text=True,
-                       timeout=timeout)
+    kw = {}
+    if FROZEN and hasattr(subprocess, 'CREATE_NO_WINDOW'):
+        kw['creationflags'] = subprocess.CREATE_NO_WINDOW   # no console flash
+    p = subprocess.run(ENGINE_CMD + args, capture_output=True, text=True,
+                       timeout=timeout, **kw)
     return p.returncode, p.stdout, p.stderr
 
 
@@ -431,8 +439,17 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
 
 def main():
-    if not os.path.exists(ENGINE):
+    if not FROZEN and not os.path.exists(ENGINE):
         sys.exit('engine not found next to gui.py')
+    if FROZEN:
+        # built as a console app so dropped files still get a console, but the
+        # window makes no sense when the UI is a browser page
+        try:
+            import ctypes
+            ctypes.windll.user32.ShowWindow(
+                ctypes.windll.kernel32.GetConsoleWindow(), 0)
+        except Exception:
+            pass
     s = socket.socket()
     s.bind(('127.0.0.1', 0))
     port = s.getsockname()[1]

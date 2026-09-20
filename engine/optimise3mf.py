@@ -26,7 +26,9 @@ import mixer
 import xml.etree.ElementTree as ET
 
 __version__ = '2.0'
-TOOL_DIR = os.path.dirname(os.path.abspath(__file__))
+# _MEIPASS is where PyInstaller unpacks the bundle; falls back to the script
+# directory when running from source.
+TOOL_DIR = getattr(sys, '_MEIPASS', None) or os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(TOOL_DIR, 'data')
 
 CARRY_KEYS = ['wall_loops', 'wall_generator',
