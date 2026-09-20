@@ -1,3 +1,5 @@
+<img src="docs/logo.png" alt="Prism" width="110" align="right">
+
 # Prism
 
 **Retarget any 3MF. Blend any colour.**
