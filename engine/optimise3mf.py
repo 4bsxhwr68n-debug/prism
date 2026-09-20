@@ -242,6 +242,18 @@ QUICK_SETTINGS = {
 }
 PERCENT_KEYS = {'sparse_infill_density'}
 
+# Each output is a native project for ONE slicer. Opening a Snapmaker project
+# in Creality Print fails on the vendor's own gcode macros with an error that
+# looks like a corrupt file, so the target slicer is named everywhere a printer
+# is named.
+SLICERS = {'cp': 'Creality Print', 'snapmaker': 'Snapmaker Orca',
+           'bambu': 'Bambu Studio', 'orca': 'OrcaSlicer'}
+
+
+def slicer_for(rec):
+    return SLICERS.get(rec.get('dialect'), 'OrcaSlicer')
+
+
 SPECTRUM_BIASES = (25, 50, 75)
 SPECTRUM_MAX_LH = 0.20   # colour stack must stay under ~0.2mm to read as blended
 SPECTRUM_STEP_MIN = 0.04  # mixed_filament_height_lower_bound
@@ -1132,6 +1144,7 @@ def convert(src_path, rec, key, mode, single, dome_override, skip_analyse,
                         f'model_settings lost {tag} entries — aborting'
 
         print(f"OK -> {out_path}")
+        print(f"open in: {slicer_for(rec)}")
         print(f"printer: {rec['label']}  |  mode: {mode} ({plan['lh']}mm)  |  process: {new_cfg['print_settings_id']}")
         fmap = ", ".join(f"{i+1}:{p}" for i, p in enumerate(new_cfg['filament_settings_id'][:4]))
         print(f"filaments ({nslots}): {fmap}")
@@ -1260,7 +1273,8 @@ def main():
         for k in idx['order']:
             p = idx['printers'][k]
             tag = f"   [{p['spectrum']}]" if p.get('spectrum') else ''
-            print(f"{k:14s} {p['label']}{tag}")
+            sl = SLICERS.get(p.get('dialect'), '')
+            print(f"{k:14s} {p['label']}{tag}" + (f"   -> {sl}" if sl else ''))
         return
     if not a.files:
         ap.error('no input files')

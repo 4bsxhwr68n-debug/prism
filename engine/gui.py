@@ -89,9 +89,13 @@ def printers():
         key = line.split()[0]
         label = line[len(key):].strip()
         spectrum = '[' in label
+        sl = ''
+        if '->' in label:
+            label, sl = label.split('->', 1)
+            sl = sl.strip()
         rows.append({'key': key,
                      'label': re.sub(r'\s*\[.*\]\s*$', '', label).strip(),
-                     'spectrum': spectrum})
+                     'spectrum': spectrum, 'slicer': sl})
     return rows
 
 
@@ -267,9 +271,11 @@ document.getElementById('modes').onclick=e=>{const b=e.target.closest('.mode');i
 
 api('/api/printers').then(r=>{const s=document.getElementById('printer');
  s.innerHTML='<option value="">Select a printer…</option>'+r.printers.map(p=>
-  `<option value="${p.key}" data-s="${p.spectrum?1:0}">${p.label}${p.spectrum?'  ·  Full Spectrum':''}</option>`).join('');
+  `<option value="${p.key}" data-s="${p.spectrum?1:0}" data-sl="${p.slicer||''}">${p.label}${p.spectrum?'  ·  Full Spectrum':''}</option>`).join('');
  s.onchange=()=>{S.printer=s.value||null;
   S.spectrumOk=s.selectedOptions[0]&&s.selectedOptions[0].dataset.s==='1';
+  S.slicer=(s.selectedOptions[0]&&s.selectedOptions[0].dataset.sl)||'';
+  document.getElementById('gohint').textContent=S.slicer?('Opens in '+S.slicer):'';
   document.getElementById('c4').classList.toggle('off',!S.spectrumOk);
   if(!S.spectrumOk){S.spectrum=false;document.getElementById('fs').checked=false;
    document.getElementById('fsbody').style.display='none';}
@@ -335,7 +341,9 @@ document.getElementById('go').onclick=()=>{const g=document.getElementById('go')
   document.getElementById('gohint').textContent='';
   const o=document.getElementById('out');o.innerHTML='';
   const h=document.createElement('div');
-  h.innerHTML=r.ok?'<span class="ok">Done.</span>':'<span class="bad">Something went wrong.</span>';
+  h.innerHTML=r.ok
+   ?'<span class="ok">Done.</span>'+(S.slicer?' Open the result in <b>'+S.slicer+'</b>.':'')
+   :'<span class="bad">Something went wrong.</span>';
   o.appendChild(h);
   const p=document.createElement('pre');p.style.marginTop='9px';p.textContent=r.text.trim();o.appendChild(p);
   if(r.outputs&&r.outputs.length){const b=document.createElement('button');

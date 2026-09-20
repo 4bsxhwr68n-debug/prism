@@ -79,6 +79,13 @@ Double-click for the window: choose files, pick a printer, read the analysis,
 pick a mode, pick a colour, convert. Output lands next to the original as
 `<name> - KEY.3mf`.
 
+**Open the result in the slicer it was built for.** Each output is a native
+project for one slicer, and Prism names it when you pick the printer and again
+when it finishes. Creality machines open in Creality Print, the Snapmaker U1 in
+Snapmaker Orca, Bambu machines in Bambu Studio, and everything else in
+OrcaSlicer. Open a project in the wrong one and it fails on that vendor's own
+gcode macros with an error that reads like a corrupt file.
+
 Or drop `.3mf` files straight onto the app icon for the quick path.
 
 ![Choosing a colour](docs/palette.png)

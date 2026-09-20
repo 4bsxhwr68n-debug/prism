@@ -77,6 +77,8 @@ DEFAULTS_ALL = {
 }
 DEFAULTS_BY_PRINTER = {}   # per-machine exceptions; none needed so far
 
+DIALECT_OF = {}   # filled as each printer bakes; the index needs it
+
 SPECTRUM = {
  'u1': {'label':'Full Spectrum', 'vendor':'Snapmaker',
         'preset':'Snapmaker PLA Full Spectrum @U1 0.4 nozzle',
@@ -335,11 +337,12 @@ def main():
                                      'slots':spectrum_slots(root,spec)}
                 except Exception as e:
                     print(f"[warn] {key}: no spectrum preset ({type(e).__name__}: {e})")
+            DIALECT_OF[key]=dialect
             json.dump(rec,open(os.path.join(OUT,'printers',key+'.json'),'w'),indent=1)
             ok.append((key,label,pname,sorted(fils),bed))
         except Exception as e:
             print(f"[skip] {key}: {type(e).__name__}: {e}")
-    json.dump({'printers':{k:dict({'label':l},
+    json.dump({'printers':{k:dict({'label':l,'dialect':DIALECT_OF.get(k,'')},
                                   **({'spectrum':SPECTRUM[k]['label']} if k in SPECTRUM else {}))
                            for k,l,_,_,_ in ok},
                'order':[k for k,_,_,_,_ in ok]},
