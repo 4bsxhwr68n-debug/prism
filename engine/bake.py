@@ -66,15 +66,16 @@ TYPES = ['PLA','PLA-CF','PLA-SILK','PETG','PETG-CF','ABS','ASA','TPU','PA','PET'
 # Printers with a vendor colour-blending mode. The blend filaments are
 # deliberately NOT part of pick_filaments: they are semi-translucent, so the
 # 'decorative' rule there excludes them from being anyone's default PLA.
-# Standing per-printer preferences, applied after the source's own settings.
-# Only for machines whose good values are actually known; everything else keeps
-# whatever its vendor process profile ships.
-PRINTER_DEFAULTS = {
- k: {'sparse_infill_pattern':'gyroid',
-     'support_interface_top_layers':'3',
-     'support_top_z_distance':'0.25'}
- for k in ('u1','k2','k2plus','k2pro')
+# Standing preferences, applied after the source's own settings. Every printer
+# in the registry runs a 0.4mm nozzle at a 0.2mm layer height, so these carry
+# across unchanged; there is no machine here that wants a different number.
+# Each value is still enum-checked per printer before it is written.
+DEFAULTS_ALL = {
+ 'sparse_infill_pattern':        'gyroid',   # isotropic, no crossings
+ 'support_interface_top_layers': '3',        # cleaner surface under supports
+ 'support_top_z_distance':       '0.25',     # 1.25x layer height, easier release
 }
+DEFAULTS_BY_PRINTER = {}   # per-machine exceptions; none needed so far
 
 SPECTRUM = {
  'u1': {'label':'Full Spectrum', 'vendor':'Snapmaker',
@@ -320,10 +321,10 @@ def main():
                  'slice_info':d['slice_info'],'enums':enum_cache[bkey],
                  'default_colour':'#FFFFFF' if key=='u1' else '#000000',
                  'template':tpl,'filaments':fils}
-            if key in PRINTER_DEFAULTS:
-                enums_for = rec['enums']
-                rec['defaults'] = {k: v for k, v in PRINTER_DEFAULTS[key].items()
-                                   if not enums_for.get(k) or v in enums_for[k]}
+            want = dict(DEFAULTS_ALL); want.update(DEFAULTS_BY_PRINTER.get(key, {}))
+            enums_for = rec['enums']
+            rec['defaults'] = {k: v for k, v in want.items()
+                               if not enums_for.get(k) or v in enums_for[k]}
             if key in SPECTRUM:
                 spec=SPECTRUM[key]
                 try:

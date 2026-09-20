@@ -98,13 +98,22 @@ Or drop `.3mf` files straight onto the app icon for the quick path.
 - Never modifies geometry. It is hash-verified on every run, and the plate,
   object and instance structure is asserted intact.
 
-Some printers carry standing defaults, applied after the source's own settings
-because they are your preferences for your own machine rather than the
-designer's guess about someone else's. The Snapmaker U1 and the Creality K2
-family get gyroid infill, 3 top interface layers and a 0.25mm top Z distance for
-supports. Anything they override is named in the run output, so nothing changes
-quietly, and `--keep-source` turns them off. Other printers keep whatever their
-vendor process profile ships, because the right values there are not known yet.
+Every printer carries three standing defaults, applied after the source's own
+settings because they are your preferences for your own machine rather than the
+designer's guess about someone else's:
+
+| Setting | Value | Why |
+|---|---|---|
+| `sparse_infill_pattern` | `gyroid` | Isotropic, no crossings, good strength for the material used |
+| `support_interface_top_layers` | `3` | A cleaner surface where supports meet the model |
+| `support_top_z_distance` | `0.25` | 1.25x the layer height, so supports release without tearing |
+
+These carry across the whole registry unchanged because every machine in it runs
+a 0.4mm nozzle at a 0.2mm layer height, so there is no printer here that wants a
+different number. Each value is still checked against that printer's supported
+options before it is written, and anything it overrides is named in the run
+output, so nothing changes quietly. `--keep-source` turns them off and leaves the
+source and vendor profile to decide.
 
 Three modes: **speed** for coarser layers, **balanced** as the sensible default,
 **quality** for the finest layers plus ironing on large flat tops. A project
