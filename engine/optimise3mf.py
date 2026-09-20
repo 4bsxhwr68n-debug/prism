@@ -977,6 +977,40 @@ def build_project_settings(src, rec, single, plan, notes, spectrum=None,
     if spectrum:
         apply_spectrum(out, rec, n, spectrum, plan, notes)
 
+    # A 3mf names a system preset AND carries the resolved values. The slicer
+    # decides which to believe from `different_settings_to_system`: its first
+    # entry lists the process keys that differ from the named preset, and
+    # anything absent is silently reloaded from that preset. Ours said nothing
+    # differed, so the slicer reverted every setting Prism had changed.
+    # The list is derived from the actual diff against the baked template, so
+    # it cannot fall out of step with what was written.
+    # mixed_filament_* and dithering_* are project-level, not part of any
+    # process preset, and already survive a preset reload untouched. Listing
+    # them here would claim they belong to a preset that has never heard of
+    # them, so they are left out rather than risked.
+    NOT_PROCESS = ('mixed_filament_', 'dithering_', 'mixed_color_')
+    changed = sorted(k for k, v in out.items()
+                     if not k.startswith('filament_')
+                     and not k.startswith(NOT_PROCESS)
+                     and k in tpl and tpl[k] != v
+                     and not isinstance(v, list))
+    # Shape is [process, one per filament slot, printer]. The Creality-dialect
+    # templates omit the key entirely even though Creality projects use it, and
+    # a captured template can carry the wrong number of slots, so it is rebuilt
+    # to the right length rather than patched in place.
+    old_dss = out.get('different_settings_to_system')
+    old_dss = list(old_dss) if isinstance(old_dss, list) else []
+    proc_entry = old_dss[0] if old_dss else ''
+    printer_entry = old_dss[-1] if len(old_dss) >= 2 else ''
+    fil_entries = old_dss[1:-1] if len(old_dss) > 2 else []
+    fil_entries = (list(fil_entries) + [''] * n)[:n]
+    keep = [x for x in proc_entry.split(';') if x and x not in changed]
+    out['different_settings_to_system'] = (
+        [';'.join(keep + changed)] + fil_entries + [printer_entry])
+    if changed:
+        notes.append(f"{len(changed)} setting(s) marked as modified so the "
+                     "slicer keeps them")
+
     out['version'] = rec['project_version']
     out['from'] = 'project'
     return out, n
