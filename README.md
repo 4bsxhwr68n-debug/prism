@@ -2,6 +2,11 @@
 
 **Retarget any 3MF. Blend any colour.**
 
+![licence AGPL-3.0](https://img.shields.io/badge/licence-AGPL--3.0-2f7d62)
+![macOS and Windows](https://img.shields.io/badge/macOS%20%7C%20Windows-supported-2f7d62)
+![no dependencies](https://img.shields.io/badge/dependencies-none-2f7d62)
+![24 printers](https://img.shields.io/badge/printers-24-2f7d62)
+
 Prism takes a 3MF project made for one printer and retargets it to another, so
 it opens as a proper native project instead of a pile of broken settings. It
 covers 24 machines across Creality, Snapmaker, Bambu Lab, Prusa, Elegoo, Voron,
@@ -13,6 +18,23 @@ the closest one the printer can actually produce, and paints the file so the
 slicer prints them. You never mix by hand and you never paint.
 
 ![The Prism window](docs/header.png)
+
+## Supported printers
+
+| Make | Printers |
+|---|---|
+| **Anycubic** | Kobra 2 (`kobra2`) |
+| **Bambu Lab** | X1 Carbon (`x1c`), P1S (`p1s`), P1P (`p1p`), A1 (`a1`), A1 mini (`a1mini`), X1E (`x1e`) |
+| **Creality** | K2 (`k2`), K2 Plus (`k2plus`), K2 Pro (`k2pro`), K1C (`k1c`), K1 Max (`k1max`), K1 SE (`k1se`), Ender-3 V3 (`ender3v3`), Ender-3 V3 KE (`ender3v3ke`), Hi (`hi`) |
+| **Elegoo** | Neptune 4 Pro (`neptune4pro`) |
+| **Flashforge** | AD5X (`ad5x`) |
+| **Prusa** | MK4S (`mk4s`), CORE One (`coreone`) |
+| **Qidi** | Q1 Pro (`qidiq1pro`) |
+| **Snapmaker** | U1 (`u1`) **Full Spectrum** |
+| **Sovol** | SV06 (`sv06`) |
+| **Voron** | 2.4 300 (`voron24-300`) |
+
+Adding one is a data job, not a code job: see [rebuilding the printer data](#rebuilding-the-printer-data).
 
 ## Install
 
@@ -102,6 +124,34 @@ filaments; opaque ones stripe on shallow slopes.
 a major slicer upgrade, run `python3 engine/bake.py` with those slicers
 installed; it writes `out_v2/`, and you copy `printers/` and `index.json` into
 `engine/data/`.
+
+## If something goes wrong
+
+**"Prism is damaged and can't be opened"** on macOS. The app is ad-hoc signed
+rather than notarised. Right-click it and choose Open, or run
+`xattr -dr com.apple.quarantine /path/to/Prism.app`.
+
+**"Python 3 is required but was not found"** on Windows. Install it from
+[python.org](https://www.python.org/downloads/) or the Microsoft Store and run
+`Prism.bat` again. No packages are needed.
+
+**The blend prints as one colour.** Check the filament table in your slicer
+after slicing. Roughly balanced usage across two filaments, with hundreds of
+tool changes, means it worked. Almost everything on one filament means the model
+reached the slicer unpainted.
+
+**Colours look wrong.** The gamut has no dark end, because four semi-translucent
+filaments with no black cannot reach a deep shade. Run `--spectrum-list` to see
+every colour the printer can actually make.
+
+**The slice fails on max print height.** Supports or the prime tower are running
+past the top of the model. Please report it with the source file.
+
+## Contributing
+
+Issues and pull requests are welcome, particularly new printer profiles and any
+slicer that rejects a converted file. Attach the source `.3mf` where you can:
+almost everything here is a file-format bug and they are hard to guess at.
 
 ## Support
 
