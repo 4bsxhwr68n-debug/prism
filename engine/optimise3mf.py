@@ -1316,10 +1316,12 @@ def main():
         single = a.single if a.single.startswith('#') else rec['default_colour']
 
     overrides = {}
-    for flag, key in QUICK_SETTINGS.items():
+    # NB: not `key` — that holds the printer key, and rebinding it here renamed
+    # every output file after the last entry in QUICK_SETTINGS.
+    for flag, setting in QUICK_SETTINGS.items():
         v = getattr(a, 'qs_' + flag.replace('-', '_'), None)
         if v is not None:
-            overrides[key] = v
+            overrides[setting] = v
     for item in (a.sets or []):
         if '=' not in item:
             ap.error('--set wants KEY=VALUE, got %r' % item)
