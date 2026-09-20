@@ -115,6 +115,25 @@ options before it is written, and anything it overrides is named in the run
 output, so nothing changes quietly. `--keep-source` turns them off and leaves the
 source and vendor profile to decide.
 
+### Changing them
+
+Open **Advanced settings** in the window, or use the flags. Anything you set
+beats both the source and Prism's defaults, and the run output says so.
+
+![Advanced settings](docs/advanced.png)
+
+    --infill gyroid              --walls 3
+    --infill-density 25          --top-layers 5
+    --interface-layers 3         --bottom-layers 3
+    --top-z 0.25                 --seam aligned
+    --support-style tree_slim    --brim outer_only
+
+`--list-settings` prints these with each printer's current value and every
+allowed option. For anything the flags do not cover, `--set KEY=VALUE` reaches
+any key in the profile and is repeatable. Values are checked against what the
+printer actually supports, so a wrong one is refused with the allowed list
+rather than written into a file the slicer will reject.
+
 Three modes: **speed** for coarser layers, **balanced** as the sensible default,
 **quality** for the finest layers plus ironing on large flat tops. A project
 authored finer than the mode keeps its finer layer height; only speed coarsens.

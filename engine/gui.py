@@ -99,6 +99,42 @@ def palette(key):
     return rows
 
 
+QUICK = [('sparse_infill_pattern', 'Infill pattern', 'enum'),
+         ('sparse_infill_density', 'Infill density', 'pct'),
+         ('wall_loops', 'Walls', 'int'),
+         ('top_shell_layers', 'Top layers', 'int'),
+         ('bottom_shell_layers', 'Bottom layers', 'int'),
+         ('support_interface_top_layers', 'Support interface layers', 'int'),
+         ('support_top_z_distance', 'Support top gap (mm)', 'num'),
+         ('support_style', 'Support style', 'enum'),
+         ('seam_position', 'Seam position', 'enum'),
+         ('ironing_type', 'Ironing', 'enum')]
+
+
+def settings_for(key):
+    """What this printer ships, what Prism changes, and what each may be set to.
+
+    Read straight from the baked profile rather than parsed out of CLI output,
+    so the controls can never drift from what the engine will accept."""
+    path = os.path.join(HERE, 'data', 'printers', key + '.json')
+    if not os.path.exists(path):
+        return {'rows': []}
+    with open(path, encoding='utf-8') as fh:
+        d = json.load(fh)
+    tpl, enums, defaults = d['template'], d.get('enums', {}), d.get('defaults', {})
+    rows = []
+    for k, label, kind in QUICK:
+        if k not in tpl:
+            continue
+        cur = tpl[k]
+        cur = cur[0] if isinstance(cur, list) and cur else cur
+        rows.append({'key': k, 'label': label, 'kind': kind,
+                     'effective': defaults.get(k, cur),
+                     'prism': defaults.get(k),
+                     'options': sorted(enums.get(k, []))})
+    return {'rows': rows}
+
+
 PAGE = r"""<!doctype html><html><head><meta charset="utf-8">
 <title>Prism</title><meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
@@ -153,6 +189,17 @@ padding:7px 9px;cursor:pointer;background:var(--card);text-align:left;font-size:
 .out{font:12.5px/1.6 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
 white-space:pre-wrap;word-break:break-word}
 .ok{color:var(--accent);font-weight:600}.bad{color:var(--bad);font-weight:600}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:11px;margin-top:13px}
+.fld{display:flex;flex-direction:column;gap:5px}
+.lbl{font-size:12.5px;color:var(--dim);font-weight:500;display:block}
+.fld input,.fld select,textarea{font:inherit;font-size:13.5px;padding:7px 9px;
+ border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink);width:100%}
+textarea{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px;resize:vertical}
+.mark{color:var(--accent);font-weight:600}
+summary{cursor:pointer;font-size:14px;font-weight:600;list-style:none}
+summary::-webkit-details-marker{display:none}
+summary::before{content:"▸ ";color:var(--dim)}
+details[open] summary::before{content:"▾ "}
 .foot{margin:26px 0 0;text-align:center;font-size:12.5px;color:var(--dim)}
 .foot a{color:var(--accent);font-weight:600}
 .spin{width:15px;height:15px;border:2px solid var(--line);border-top-color:var(--accent);
@@ -180,7 +227,17 @@ border-radius:50%;animation:s .7s linear infinite;display:inline-block;vertical-
 <div class="hint" id="fshint"></div>
 <div id="swwrap"></div></div></div>
 
-<div class="card" id="c5"><button class="primary" id="go" disabled>Convert</button>
+<div class="card" id="c5"><details id="adv"><summary>Advanced settings</summary>
+<p class="hint" style="margin-top:4px">Blank uses the value shown. Prism's own
+choices are marked; clearing one back to blank restores it.</p>
+<div class="grid" id="advgrid"></div>
+<label class="lbl" for="extra" style="margin-top:14px">Anything else, one
+<code>key=value</code> per line</label>
+<textarea id="extra" rows="3" spellcheck="false"
+ placeholder="ironing_type=topmost&#10;brim_width=5"></textarea>
+</details></div>
+
+<div class="card" id="c6"><button class="primary" id="go" disabled>Convert</button>
 <span class="hint" id="gohint" style="margin-left:11px"></span>
 <div class="out" id="out" style="margin-top:14px"></div></div>
 <p class="foot" __SUPPORT__>Prism is free and open source.
@@ -209,7 +266,25 @@ api('/api/printers').then(r=>{const s=document.getElementById('printer');
   if(!S.spectrumOk){S.spectrum=false;document.getElementById('fs').checked=false;
    document.getElementById('fsbody').style.display='none';}
   else loadPalette();
-  refresh();analyse();};});
+  loadSettings();refresh();analyse();};});
+
+function loadSettings(){if(!S.printer)return;
+ api('/api/settings',{printer:S.printer}).then(r=>{
+  document.getElementById('advgrid').innerHTML=r.rows.map(f=>{
+   const mark=f.prism?' <span class="mark">Prism</span>':'';
+   const ctl=f.kind==='enum'&&f.options.length
+    ? `<select data-k="${f.key}"><option value="">${f.effective}</option>`+
+      f.options.map(o=>`<option value="${o}">${o}</option>`).join('')+`</select>`
+    : `<input data-k="${f.key}" placeholder="${f.effective}">`;
+   return `<div class="fld"><label class="lbl">${f.label}${mark}</label>${ctl}</div>`;
+  }).join('');});}
+
+function collectSets(){const out=[];
+ document.querySelectorAll('#advgrid [data-k]').forEach(el=>{
+  const v=(el.value||'').trim(); if(v) out.push(el.dataset.k+'='+v);});
+ (document.getElementById('extra').value||'').split('\n').forEach(l=>{
+  l=l.trim(); if(l&&l.includes('=')) out.push(l);});
+ return out;}
 
 function loadPalette(){api('/api/palette',{printer:S.printer}).then(r=>{S.palette=r.palette;
  const chip=c=>`<button class="chip" data-c="${c.id}"><div class="dot" style="background:${c.hex}"></div>${c.label}</button>`;
@@ -248,7 +323,7 @@ document.getElementById('go').onclick=()=>{const g=document.getElementById('go')
  g.disabled=true;document.getElementById('gohint').innerHTML='<span class="spin"></span> converting…';
  document.getElementById('out').textContent='';
  api('/api/convert',{files:S.files,printer:S.printer,mode:S.mode,
-   spectrum:S.spectrum,colour:S.colour}).then(r=>{
+   spectrum:S.spectrum,colour:S.colour,sets:collectSets()}).then(r=>{
   document.getElementById('gohint').textContent='';
   const o=document.getElementById('out');o.innerHTML='';
   const h=document.createElement('div');
@@ -317,6 +392,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
         try:
             if path == '/api/pick':
                 self._send(json.dumps({'files': pick_files()}))
+            elif path == '/api/settings':
+                self._send(json.dumps(settings_for(body.get('printer', ''))))
             elif path == '/api/palette':
                 self._send(json.dumps({'palette': palette(body.get('printer', ''))}))
             elif path == '/api/probe':
@@ -338,6 +415,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     args.append('--spectrum')
                     if body.get('colour'):
                         args += ['--spectrum-colour', str(body['colour'])]
+                for item in (body.get('sets') or []):
+                    if '=' in str(item):
+                        args += ['--set', str(item)]
                 rc, out, err = engine(args + files)
                 outs = re.findall(r'^OK -> (.+)$', out, re.M)
                 self._send(json.dumps({'ok': rc == 0, 'text': out + err,

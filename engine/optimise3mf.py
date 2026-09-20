@@ -224,6 +224,22 @@ def describe(fname, metrics, plans, support_on):
 
 # --------------------------- conversion --------------------------------
 
+# The handful of settings worth a short flag. Everything else in the profile is
+# reachable through --set, which is the advanced door.
+QUICK_SETTINGS = {
+    'infill':           'sparse_infill_pattern',
+    'infill-density':   'sparse_infill_density',
+    'interface-layers': 'support_interface_top_layers',
+    'top-z':            'support_top_z_distance',
+    'walls':            'wall_loops',
+    'top-layers':       'top_shell_layers',
+    'bottom-layers':    'bottom_shell_layers',
+    'seam':             'seam_position',
+    'brim':             'brim_type',
+    'support-style':    'support_style',
+}
+PERCENT_KEYS = {'sparse_infill_density'}
+
 SPECTRUM_BIASES = (25, 50, 75)
 SPECTRUM_MAX_LH = 0.20   # colour stack must stay under ~0.2mm to read as blended
 SPECTRUM_STEP_MIN = 0.04  # mixed_filament_height_lower_bound
@@ -840,7 +856,7 @@ def apply_spectrum(out, rec, n, spectrum, plan, notes):
 
 
 def build_project_settings(src, rec, single, plan, notes, spectrum=None,
-                           keep_source=False):
+                           keep_source=False, overrides=None):
     tpl = rec['template']
     out = dict(tpl)
     fil_table = rec['filaments']
@@ -916,9 +932,13 @@ def build_project_settings(src, rec, single, plan, notes, spectrum=None,
     # printer, not the designer's guess about someone else's. Anything they
     # override is named, so nothing changes silently. --keep-source turns them
     # off and leaves the source and vendor profile to decide.
+    wanted = {} if keep_source else dict(rec.get('defaults') or {})
+    chosen = set(overrides or ())
+    wanted.update(overrides or {})      # an explicit choice always wins
     applied = []
-    for k, v in sorted((rec.get('defaults') or {}).items()):
-        if keep_source or k not in out:
+    for k, v in sorted(wanted.items()):
+        if k not in out:
+            notes.append(f"{k} is not a setting {rec['label']} has — ignored")
             continue
         if k in ENUM_KEYS and enums.get(k) and str(v) not in enums[k]:
             notes.append(f"default {k}={v} not supported on {rec['label']} — "
@@ -928,10 +948,11 @@ def build_project_settings(src, rec, single, plan, notes, spectrum=None,
         if str(was) == str(v):
             continue
         out[k] = str(v)
-        applied.append(f"{k}={v}" + (f" (source asked for {was})"
-                                     if k in carried_keys else f" (was {was})"))
+        applied.append(f"{k}={v}" + ("  [yours]" if k in chosen else "")
+                       + (f" (source asked for {was})"
+                          if k in carried_keys else f" (was {was})"))
     if applied:
-        notes.append("printer defaults: " + ", ".join(applied))
+        notes.append("settings applied: " + ", ".join(applied))
 
     # mode application
     out['layer_height'] = str(plan['lh'])
@@ -971,7 +992,7 @@ def inject_object_layer_height(xml_text, objid, value):
 
 
 def convert(src_path, rec, key, mode, single, dome_override, skip_analyse,
-            out_path=None, spectrum=None, keep_source=False):
+            out_path=None, spectrum=None, keep_source=False, overrides=None):
     stem = re.sub(r'\.3mf$', '', os.path.basename(src_path), flags=re.I)
     suffix = key.upper() + ('-FS' if spectrum else '')
     out_path = out_path or os.path.join(os.path.dirname(src_path),
@@ -1006,7 +1027,8 @@ def convert(src_path, rec, key, mode, single, dome_override, skip_analyse,
             plan['dome_lh'] = dome_override
 
         new_cfg, nslots = build_project_settings(src_cfg, rec, single, plan,
-                                                 notes, spectrum, keep_source)
+                                                 notes, spectrum, keep_source,
+                                                 overrides)
         os.makedirs(os.path.dirname(sp), exist_ok=True)
         json.dump(new_cfg, open(sp, 'w', encoding='utf-8', newline='\n'), indent=4)
 
@@ -1172,6 +1194,14 @@ def main():
     ap.add_argument('--dome', default=None,
                     help="override dome-object layer height ('off' disables)")
     ap.add_argument('--no-analyse', action='store_true')
+    for flag, key in sorted(QUICK_SETTINGS.items()):
+        ap.add_argument('--' + flag, dest='qs_' + flag.replace('-', '_'),
+                        default=None, metavar='V', help='set ' + key)
+    ap.add_argument('--set', action='append', dest='sets', default=None,
+                    metavar='KEY=VALUE',
+                    help='set any profile key directly; repeatable')
+    ap.add_argument('--list-settings', action='store_true',
+                    help='print the settings you can change, then exit')
     ap.add_argument('--keep-source', action='store_true',
                     help="skip this printer's standing defaults and keep the "
                          "source and vendor values")
@@ -1189,6 +1219,25 @@ def main():
         return sorted(set(vals))
 
     idx = load_index()
+    if a.list_settings:
+        if not a.printer:
+            ap.error('--list-settings needs --printer')
+        rec = load_printer(a.printer)
+        tpl, enums = rec['template'], rec['enums']
+        print("short flags:")
+        for flag, key in sorted(QUICK_SETTINGS.items()):
+            cur = tpl.get(key, '-')
+            cur = cur[0] if isinstance(cur, list) and cur else cur
+            dflt = (rec.get('defaults') or {}).get(key)
+            print("  --%-17s %-30s now %s%s"
+                  % (flag, key, cur,
+                     '  (Prism sets %s)' % dflt if dflt else ''))
+        print("\nvalues allowed for the enum settings:")
+        for k in sorted(enums):
+            print("  %-30s %s" % (k, ', '.join(sorted(enums[k]))))
+        print("\nanything else in the profile: --set KEY=VALUE  (%d keys)"
+              % len(tpl))
+        return
     if a.spectrum_probe:
         print(probe_colour_intent([os.path.abspath(f) for f in a.files]))
         return
@@ -1250,6 +1299,24 @@ def main():
     if a.single:
         single = a.single if a.single.startswith('#') else rec['default_colour']
 
+    overrides = {}
+    for flag, key in QUICK_SETTINGS.items():
+        v = getattr(a, 'qs_' + flag.replace('-', '_'), None)
+        if v is not None:
+            overrides[key] = v
+    for item in (a.sets or []):
+        if '=' not in item:
+            ap.error('--set wants KEY=VALUE, got %r' % item)
+        k, v = item.split('=', 1)
+        overrides[k.strip()] = v.strip()
+    for k, v in list(overrides.items()):
+        if k in PERCENT_KEYS and not str(v).endswith('%'):
+            overrides[k] = str(v) + '%'
+        allowed = rec['enums'].get(k)
+        if allowed and str(overrides[k]) not in allowed:
+            ap.error('%s=%s is not supported on %s. Allowed: %s'
+                     % (k, v, rec['label'], ', '.join(sorted(allowed))))
+
     spectrum = None
     if a.spectrum:
         if not rec.get('spectrum'):
@@ -1288,7 +1355,7 @@ def main():
         ap.error('--out only valid with a single input file')
     for f in a.files:
         convert(os.path.abspath(f), rec, key, mode, single, a.dome,
-                a.no_analyse, a.out, spectrum, a.keep_source)
+                a.no_analyse, a.out, spectrum, a.keep_source, overrides)
 
 
 if __name__ == '__main__':
