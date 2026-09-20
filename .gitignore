@@ -1,0 +1,6 @@
+.DS_Store
+__pycache__/
+*.pyc
+build/
+out_v2/
+*.3mf
