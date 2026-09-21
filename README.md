@@ -27,13 +27,27 @@ Nothing to install on any platform.
 
 | | |
 |---|---|
-| **macOS** | Unzip, drag `Prism.app` where you like. First run: right-click, Open, once. |
+| **macOS** | Unzip, drag `Prism.app` where you like. macOS blocks the first open, see below. |
 | **Windows** | Unzip, double-click `Prism.exe`. SmartScreen warns once: More info, Run anyway. |
 | **Linux** | Unpack, run `./prism`. |
 
-Neither binary is signed, hence the warnings. Smaller `-script` variants are
-also attached for anyone who already has Python 3. On Linux those need `zenity`,
-`kdialog` or `yad` for the file dialog.
+Neither binary is signed yet, and on macOS that now costs you a detour. Since
+macOS 15, an unsigned app that arrived over the internet is blocked outright and
+the old right-click-Open trick no longer works. The warning claims the app is
+damaged or cannot be checked for malware, which reads far worse than it is.
+
+**To open it:** try it once, let it be refused, then go to System Settings,
+Privacy and Security, scroll to Security, and click **Open Anyway** next to
+Prism. Do that within an hour of the refusal or macOS forgets and you start
+again. In a terminal, `xattr -dr com.apple.quarantine /path/to/Prism.app` does
+the same thing in one line.
+
+This is worth fixing properly rather than documenting, and
+[notarising it](macos/NOTARISING.md) is the fix. The machinery is in the repo
+and waiting on an Apple Developer membership.
+
+Smaller `-script` variants are also attached for anyone who already has Python 3.
+On Linux those need `zenity`, `kdialog` or `yad` for the file dialog.
 
 ## Use
 
@@ -218,9 +232,11 @@ It writes `out_v2/`; copy `printers/` and `index.json` into `engine/data/`.
 
 ## If something goes wrong
 
-**"Prism is damaged and can't be opened"** on macOS. It is ad-hoc signed rather
-than notarised. Right-click, Open, or `xattr -dr com.apple.quarantine
-/path/to/Prism.app`.
+**"Prism is damaged and can't be opened"** on macOS. It is not damaged, it is
+unsigned, and macOS 15 and later say this about any unsigned download. Right
+click and Open does not help any more. Use System Settings, Privacy and
+Security, Open Anyway, or run `xattr -dr com.apple.quarantine
+/path/to/Prism.app`. See [Install](#install).
 
 **The file opens with an error about custom gcode.** It is in the wrong slicer.
 Check the one Prism named when it converted.

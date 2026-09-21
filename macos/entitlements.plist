@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Notarisation requires the hardened runtime, which closes doors this app
+	     needs. Each entitlement below reopens exactly one of them.
+
+	     The droplet reveals finished files with `tell application "Finder"`,
+	     which is an Apple event to another process. Under the hardened runtime
+	     that is refused outright unless this is present. -->
+	<key>com.apple.security.automation.apple-events</key>
+	<true/>
+
+	<!-- Every action shells out to /usr/bin/python3. That interpreter loads
+	     modules and writes bytecode caches, which the hardened runtime reads as
+	     unsigned code being brought into a signed process. -->
+	<key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+	<true/>
+	<key>com.apple.security.cs.disable-library-validation</key>
+	<true/>
+</dict>
+</plist>
