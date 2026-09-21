@@ -14,6 +14,8 @@ A Snapmaker U1 has four independent nozzles and no mixing chamber, so colour is
 never a ratio in the gcode. Full Spectrum works by alternating thin layers of two
 filaments until your eye reads them as one colour.
 
+![How two filaments become one colour](colour-blend.png)
+
 Prism does the three jobs that sit between "I want green" and a file that prints
 green:
 
@@ -96,19 +98,25 @@ you defined are preserved exactly; only the colours move.
 
 ## What it can and cannot produce
 
-The four filaments are semi-translucent Cyan, Magenta, Yellow and Grey. Blending
-is subtractive, so cyan plus yellow gives green, not grey.
+This is the whole palette. If a colour is not here, the printer cannot make it.
 
-**There is no dark end to the gamut.** Four semi-translucent filaments with no
-black cannot reach a deep shade. Ask for near-black and you get the closest
-available colour, and the run says so rather than quietly printing something
-else:
+![Every colour a Snapmaker U1 can print](colour-palette.png)
+
+**The gamut is bright and narrow, and this is the part worth reading twice.**
+Cyan, magenta, yellow and grey with no white and no black cannot reach dark,
+muted or pale colours. Not just black: a deep green comes back as bright teal, a
+brown as orange, an off-white as mid grey.
+
+![What you ask for, and what you get](colour-gamut.png)
+
+Those are real matches from the tool, with the perceptual distance beside each.
+Prism always says when a match is a compromise rather than printing it quietly:
 
     slot 2 #101010 -> #A6789D Pink (Magenta+Gray 75%)  (closest available)
 
-Run `--spectrum-list` before you commit to a colour scheme. Designing around
-what the printer can actually make beats being surprised at the end of a long
-print.
+So run `--spectrum-list`, or open the colour picker in the window, **before** you
+commit to a colour scheme. Designing around this palette beats discovering its
+edges at the end of a twenty hour print.
 
 ---
 

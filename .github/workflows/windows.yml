@@ -63,7 +63,11 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload ${{ github.ref_name }} (Get-Item Prism-*-Windows.zip).Name --clobber
+        run: |
+          $tag = "${{ github.ref_name }}"
+          gh release view $tag 2>$null
+          if ($LASTEXITCODE -ne 0) { gh release create $tag --title "Prism $tag" --generate-notes }
+          gh release upload $tag (Get-Item Prism-*-Windows.zip).Name --clobber
         shell: pwsh
 
   linux:
@@ -117,4 +121,8 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload ${{ github.ref_name }} Prism-*-Linux.tar.gz --clobber
+        run: |
+          tag="${{ github.ref_name }}"
+          gh release view "$tag" >/dev/null 2>&1 || \
+            gh release create "$tag" --title "Prism $tag" --generate-notes
+          gh release upload "$tag" Prism-*-Linux.tar.gz --clobber
