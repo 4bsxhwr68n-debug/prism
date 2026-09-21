@@ -4,3 +4,8 @@ __pycache__/
 build/
 out_v2/
 *.3mf
+
+# macOS engine build (PyInstaller)
+macos/.venv/
+macos/dist/
+macos/spec/

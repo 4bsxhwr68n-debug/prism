@@ -21,18 +21,48 @@ end open
 -- Windows and needs nothing installed. Backgrounded, so this applet can quit
 -- and leave the window as the app; the server exits once the tab closes.
 on run
-	set guiTool to POSIX path of (path to me) & "Contents/Resources/gui.py"
-	do shell script "/usr/bin/python3 " & quoted form of guiTool & " > /dev/null 2>&1 &"
+	set b to bundledEngine()
+	if b is not "" then
+		set guiCmd to quoted form of b
+	else
+		set guiCmd to "/usr/bin/python3 " & quoted form of (resourcesDir() & "gui.py")
+	end if
+	do shell script guiCmd & " > /dev/null 2>&1 &"
 end run
 
+-- /usr/bin/python3 is NOT Python. It is the xcode-select shim, byte-identical
+-- to /usr/bin/git and /usr/bin/clang, and on a Mac without Xcode or the Command
+-- Line Tools it prompts to install developer tools instead of running anything.
+-- So prefer the bundled engine, which carries its own interpreter and needs
+-- nothing installed. The fallback exists for a source checkout, where
+-- macos/build.sh had no binary to embed.
+on resourcesDir()
+	return POSIX path of (path to me) & "Contents/Resources/"
+end resourcesDir
+
+-- Actually RUN it rather than testing the executable bit. The bundled engine is
+-- built for one architecture, so on a Mac of the other kind the file is present
+-- and executable and still cannot start ("Bad CPU type"). Only an exec proves
+-- it. Called once per launch, so the cost is one engine start.
+on bundledEngine()
+	set b to resourcesDir() & "prism-engine"
+	try
+		do shell script quoted form of b & " --engine --list > /dev/null 2>&1"
+		return b
+	end try
+	return ""
+end bundledEngine
+
 on enginePath()
-	return POSIX path of (path to me) & "Contents/Resources/optimise3mf.py"
+	set b to bundledEngine()
+	if b is not "" then return quoted form of b & " --engine"
+	return "/usr/bin/python3 " & quoted form of (resourcesDir() & "optimise3mf.py")
 end enginePath
 
 on processFiles(fileList)
 	set tool to enginePath()
 	-- printer list from the engine's registry
-	set listText to do shell script "/usr/bin/python3 " & quoted form of tool & " --list"
+	set listText to do shell script tool & " --list"
 	set printerLines to paragraphs of listText
 	set chosen to choose from list printerLines with prompt "Optimise for which printer?" default items {item 1 of printerLines} with title "Prism"
 	if chosen is false then return
@@ -43,7 +73,7 @@ on processFiles(fileList)
 	repeat with p in fileList
 		set fileArgs to fileArgs & " " & quoted form of p
 	end repeat
-	set reportText to do shell script "/usr/bin/python3 " & quoted form of tool & " --printer " & printerKey & " --report" & fileArgs
+	set reportText to do shell script tool & " --printer " & printerKey & " --report" & fileArgs
 	set modeChoice to choose from list {"speed  - fastest, coarser layers", "balanced  - the sensible default", "quality  - finest layers, ironing, dome refinement"} with prompt "Model analysis:" & return & return & reportText & return & return & "Pick a mode:" default items {"balanced  - the sensible default"} with title "Prism"
 	if modeChoice is false then return
 	set modeKey to word 1 of (item 1 of modeChoice)
@@ -58,7 +88,7 @@ on processFiles(fileList)
 			set spectrumFlag to " --spectrum"
 			set spectrumLabel to " / full spectrum"
 			-- palette comes from the engine, so it always matches what gets written
-			set palText to do shell script "/usr/bin/python3 " & quoted form of tool & " --printer " & printerKey & " --spectrum-list"
+			set palText to do shell script tool & " --printer " & printerKey & " --spectrum-list"
 			set palLines to paragraphs of palText
 			set autoItem to "Map the model's own colours automatically"
 			set palOptions to {autoItem}
@@ -69,7 +99,7 @@ on processFiles(fileList)
 			-- a model using one slot has nothing to map, so don't default to mapping
 			set colourCount to 1
 			try
-				set colourCount to (do shell script "/usr/bin/python3 " & quoted form of tool & " --spectrum-probe" & fileArgs) as integer
+				set colourCount to (do shell script tool & " --spectrum-probe" & fileArgs) as integer
 			end try
 			if colourCount > 1 and (count of palOptions) > 1 then
 				set defItem to autoItem
@@ -91,7 +121,7 @@ on processFiles(fileList)
 	set summaries to {}
 	repeat with p in fileList
 		try
-			set outText to do shell script "/usr/bin/python3 " & quoted form of tool & " --printer " & printerKey & " --mode " & modeKey & spectrumFlag & " " & quoted form of p
+			set outText to do shell script tool & " --printer " & printerKey & " --mode " & modeKey & spectrumFlag & " " & quoted form of p
 			set end of summaries to outText
 		on error errMsg
 			set end of summaries to "FAILED: " & p & return & errMsg

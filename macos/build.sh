@@ -19,6 +19,18 @@ cp "$ROOT/engine/"*.py "$OUT/Contents/Resources/"
 rm -rf "$OUT/Contents/Resources/data"
 cp -R "$ROOT/engine/data" "$OUT/Contents/Resources/data"
 
+# The bundled engine carries its own interpreter, so the app needs no Python on
+# the Mac. Built separately by macos/build-engine.sh because it needs
+# PyInstaller. Without it the droplet falls back to /usr/bin/python3, which only
+# works on a Mac with Xcode or the Command Line Tools installed.
+ENGINE="${PRISM_ENGINE_BIN:-$HERE/dist/prism-engine}"
+if [ -x "$ENGINE" ]; then
+  cp "$ENGINE" "$OUT/Contents/Resources/prism-engine"
+  BUNDLED=yes
+else
+  BUNDLED=no
+fi
+
 PL="$OUT/Contents/Info.plist"
 # NSAppleEventsUsageDescription is what macOS shows when the app first asks to
 # talk to the Finder. Without it the prompt never appears and the reveal fails.
@@ -41,17 +53,23 @@ if [ -n "$IDENTITY" ]; then
   # --options runtime is the hardened runtime, which notarisation requires.
   # --timestamp gets a trusted timestamp, without which the signature expires
   # with the certificate instead of outliving it.
+  if [ "$BUNDLED" = yes ]; then
+    codesign --force --timestamp --options runtime \
+             --sign "$IDENTITY" "$OUT/Contents/Resources/prism-engine"
+  fi
   codesign --force --timestamp --options runtime \
            --entitlements "$HERE/entitlements.plist" \
            --sign "$IDENTITY" "$OUT"
   codesign --verify --strict --verbose=2 "$OUT" 2>&1 | sed 's/^/  /'
   echo "Built $OUT"
+  echo "  engine: $([ "$BUNDLED" = yes ] && echo "bundled, no Python needed" || echo "NOT bundled, needs Xcode CLT on the user's Mac")"
   echo "  signed: $IDENTITY"
   echo "  next:   ./macos/notarise.sh \"$OUT\""
 else
   codesign --force --deep --sign - "$OUT"
   codesign --verify --deep "$OUT"
   echo "Built $OUT"
+  echo "  engine: $([ "$BUNDLED" = yes ] && echo "bundled, no Python needed" || echo "NOT bundled, needs Xcode CLT on the user's Mac")"
   echo "  signed: ad-hoc (no Developer ID in the keychain)"
   echo "  WARNING: fine on this Mac, but macOS 15+ blocks this build after a"
   echo "           download and offers no right-click bypass. Ship a notarised"
