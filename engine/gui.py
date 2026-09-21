@@ -329,7 +329,7 @@ border-radius:50%;animation:s .7s linear infinite;display:inline-block;vertical-
  <option value="suggest">Tell me which way up needs least support</option>
  <option value="apply">Turn it for me</option>
 </select></div>
-<pre id="report">—</pre>
+<pre id="report">–</pre>
 <div class="modes" style="margin-top:12px" id="modes"></div></div>
 
 <div class="card off" id="c4"><div class="step"><div class="num">4</div><h2>Colour</h2></div>

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Prism — retarget any 3mf project for 24 printers across
+"""Prism: retarget any 3mf project for 24 printers across
 Creality / Snapmaker / Bambu Lab / Prusa / Elegoo / Voron / Qidi / Sovol /
 Anycubic / Flashforge, with model-aware quality/speed planning.
 
@@ -19,7 +19,7 @@ three concrete plans:
                                                       (~1.3-1.6x)
 A source project authored finer than the mode's layer height keeps its finer
 value (we never coarsen below the designer's choice except in speed mode).
-Geometry is never modified — hash-verified on every run.
+Geometry is never modified, hash-verified on every run.
 """
 import argparse, hashlib, json, math, os, re, shutil, sys, tempfile, zipfile
 import mixer
@@ -66,7 +66,7 @@ def load_index():
 def load_printer(key):
     p = os.path.join(DATA, 'printers', key + '.json')
     if not os.path.exists(p):
-        sys.exit(f"unknown printer '{key}' — run with --list to see keys")
+        sys.exit(f"unknown printer '{key}'. Run with --list to see keys")
     with open(p, encoding='utf-8') as f:
         return json.load(f)
 
@@ -551,7 +551,7 @@ def plan_modes(metrics, src_lh, enums):
 def describe(fname, metrics, plans, support_on):
     lines = [f"{os.path.basename(fname)}:"]
     if metrics is None:
-        lines.append("  (mesh analysis skipped — large file)")
+        lines.append("  (mesh analysis skipped, large file)")
     else:
         for o, m in metrics.items():
             bits = []
@@ -567,7 +567,7 @@ def describe(fname, metrics, plans, support_on):
             if bits:
                 lines.append(f"  object {o}: " + "; ".join(bits))
         if len(lines) == 1:
-            lines.append("  clean geometry — no special handling needed")
+            lines.append("  clean geometry, no special handling needed")
     for name in ('speed', 'balanced', 'quality'):
         p = plans[name]
         d = f", dome objects {p['dome_lh']}" if p['dome_lh'] and p['dome_objs'] else ""
@@ -801,7 +801,7 @@ def apply_painting(tmp, ms_xml, id_map, num_physical, report, notes):
     states = object_part_states(ms_xml)
     rootp = os.path.join(tmp, '3D', '3dmodel.model')
     if not os.path.exists(rootp):
-        notes.append('no root model — blends cannot be painted')
+        notes.append('no root model, blends cannot be painted')
         return 0
     root_xml = open(rootp, encoding='utf-8', errors='replace').read()
     cmap = component_map(root_xml)
@@ -876,7 +876,7 @@ def apply_painting(tmp, ms_xml, id_map, num_physical, report, notes):
         report.append('painted %s triangles so the blends actually blend'
                       % format(painted, ','))
     if unresolved:
-        notes.append('%d part(s) could not be matched to geometry — those keep '
+        notes.append('%d part(s) could not be matched to geometry, those keep '
                      'a plain assignment and will print as the first component'
                      % unresolved)
     return painted
@@ -1085,7 +1085,7 @@ def map_source_colours(ms_text, src_cfg, palette, extra_states, report, notes):
     src = [hex_to_rgb(c) for c in ((src_cfg or {}).get('filament_colour') or [])]
     if not src:
         report.append('source declares no filament colours: everything stays on '
-                      'slot 1 — pick a colour to print it as a blend')
+                      'slot 1. Pick a colour to print it as a blend')
         return ms_text, 0, {}
     # Every id is remapped, including a model that only uses one. Loading the
     # spectrum filaments redefines what each slot MEANS, so an id left alone
@@ -1118,9 +1118,9 @@ def map_source_colours(ms_text, src_cfg, palette, extra_states, report, notes):
     report.extend(lines)
     if worst > COLOUR_GAP_WARN:
         notes.append('some colours are outside what four semi-translucent '
-                     'filaments can reach — nearest match used')
+                     'filaments can reach, nearest match used')
     if len(mapping) == 1:
-        report.append('  (single-colour model — pick a colour if you want a blend)')
+        report.append('  (single-colour model, pick a colour if you want a blend)')
     return ms_text, hits, mapping
 
 
@@ -1154,7 +1154,7 @@ def apply_spectrum(out, rec, n, spectrum, plan, notes):
     if dither is None:                      # auto: the documented striping case
         dither = bool(plan.get('dome_objs'))
         if dither:
-            notes.append('advanced dithering on (rounded tops detected — '
+            notes.append('advanced dithering on (rounded tops detected, '
                           'ordered pattern reduces blend striping)')
     out['mixed_filament_advanced_dithering'] = '1' if dither else '0'
 
@@ -1194,7 +1194,7 @@ def apply_spectrum(out, rec, n, spectrum, plan, notes):
         step = round(min(max(step, lo), hi), 3)
         if asked and abs(asked - step) > 1e-9:
             notes.append('blend step %smm is outside what this printer allows '
-                         '(%s-%smm) — using %smm' % (asked, lo, hi, step))
+                         '(%s-%smm), using %smm' % (asked, lo, hi, step))
         # Set the LAYER HEIGHT itself rather than dithering_z_step_size. That
         # option thins only painted zones, which leaves supports and the prime
         # tower on the original height; they then run past the top of the model
@@ -1212,14 +1212,14 @@ def apply_spectrum(out, rec, n, spectrum, plan, notes):
             # every layer is already finer than any dome refinement would be
             plan['dome_lh'] = None
     else:
-        notes.append('blend layers off — flat faces will show one filament')
+        notes.append('blend layers off, flat faces will show one filament')
 
     initials = [s['name'].replace('Semi-Translucent ', '')[0].upper()
                 for s in spec['slots']]
     pairs = sorted({f"{initials[a-1]}+{initials[b-1]}" for a, b, _ in palette})
     notes.append(f"full spectrum: {n} slots set to {spec['filament_key']} "
                  f"({', '.join(i for i in initials)})")
-    notes.append(f"  {len(palette)} mixes — {', '.join(pairs)} "
+    notes.append(f"  {len(palette)} mixes: {', '.join(pairs)} "
                  f"at {'/'.join(str(b) for b in spectrum['biases'])}%")
     return palette
 
@@ -1254,7 +1254,7 @@ def build_project_settings(src, rec, single, plan, notes, spectrum=None,
     for i, t in enumerate(types):
         prof = fil_table.get(t)
         if prof is None:
-            notes.append(f"slot {i+1}: no {t} profile for {rec['label']} — using PLA profile")
+            notes.append(f"slot {i+1}: no {t} profile for {rec['label']}, using PLA profile")
             prof = fil_table['PLA']
         profiles.append(prof)
 
@@ -1308,10 +1308,10 @@ def build_project_settings(src, rec, single, plan, notes, spectrum=None,
     applied = []
     for k, v in sorted(wanted.items()):
         if k not in out:
-            notes.append(f"{k} is not a setting {rec['label']} has — ignored")
+            notes.append(f"{k} is not a setting {rec['label']} has, ignored")
             continue
         if k in ENUM_KEYS and enums.get(k) and str(v) not in enums[k]:
-            notes.append(f"default {k}={v} not supported on {rec['label']} — "
+            notes.append(f"default {k}={v} not supported on {rec['label']}, "
                          f"left at {out[k]}")
             continue
         was = out.get(k)
@@ -1441,9 +1441,9 @@ def convert(src_path, rec, key, mode, single, dome_override, skip_analyse,
             try:
                 src_cfg = json.load(open(sp, encoding='utf-8'))
             except Exception:
-                notes.append('source project settings unreadable — template defaults used')
+                notes.append('source project settings unreadable, template defaults used')
         else:
-            notes.append('no source project settings — template defaults used')
+            notes.append('no source project settings, template defaults used')
 
         metrics, mesh_bytes = analyse_file(tmp, rec['bed'], skip_analyse)
         src_lh = None
@@ -1485,7 +1485,7 @@ def convert(src_path, rec, key, mode, single, dome_override, skip_analyse,
         ms = os.path.join(tmp, 'Metadata', 'model_settings.config')
         support_on = str(new_cfg.get('enable_support', '0')) == '1'
         if os.path.exists(ms):
-            ms_text = open(ms, encoding='utf-8').read()   # read FIRST — a
+            ms_text = open(ms, encoding='utf-8').read()   # read FIRST, a
             # write-mode open in the same expression truncates before the read
             ms_text = clean_model_settings(ms_text, bool(single))
             id_map = {}
@@ -1509,7 +1509,7 @@ def convert(src_path, rec, key, mode, single, dome_override, skip_analyse,
                                      % len(painted_states))
                     if gap > COLOUR_GAP_WARN:
                         notes.append('requested colour is outside the achievable '
-                                     'gamut — closest blend used')
+                                     'gamut, closest blend used')
                 elif spectrum.get('map', True):
                     ms_text, _, id_map = map_source_colours(
                         ms_text, src_cfg, pal, painted_states, report, notes)
@@ -1522,12 +1522,12 @@ def convert(src_path, rec, key, mode, single, dome_override, skip_analyse,
             if spectrum:
                 apply_painting(tmp, ms_text, id_map, nslots, report, notes)
         elif spectrum and (spectrum.get('colour') is not None or spectrum.get('map', True)):
-            report.append('no per-object settings block — colours cannot be '
+            report.append('no per-object settings block, colours cannot be '
                           'assigned in this file')
         elif plan['dome_lh'] and plan['dome_objs']:
-            report.append(f"rounded top detected — already covered by global layer height {plan['lh']}"
+            report.append(f"rounded top detected, already covered by global layer height {plan['lh']}"
                           if plan['lh'] <= plan['dome_lh'] else
-                          f"rounded top detected but no per-object settings block — global {plan['lh']} applies")
+                          f"rounded top detected but no per-object settings block, global {plan['lh']} applies")
 
         open(os.path.join(tmp, 'Metadata', 'slice_info.config'), 'w',
              encoding='utf-8', newline='\n').write(rec['slice_info'])
@@ -1545,7 +1545,7 @@ def convert(src_path, rec, key, mode, single, dome_override, skip_analyse,
                 if m['oversize']:
                     report.append(f"!! object {o} ({m['dims'][0]:.0f}x{m['dims'][1]:.0f}x{m['dims'][2]:.0f}mm) exceeds {rec['label']} bed {rec['bed'][0]}x{rec['bed'][1]}x{rec['bed'][2]}")
                 if m['down_flat'] > 60 and not support_on:
-                    report.append(f"object {o}: {m['down_flat']:.0f}mm2 overhang — supports are OFF; consider enabling")
+                    report.append(f"object {o}: {m['down_flat']:.0f}mm2 overhang, supports are OFF; consider enabling")
         elif mesh_bytes > ANALYSE_BUDGET_BYTES:
             report.append(f"mesh analysis skipped ({mesh_bytes//1_000_000} MB of mesh data)")
 
@@ -1569,7 +1569,7 @@ def convert(src_path, rec, key, mode, single, dome_override, skip_analyse,
                     and not (rec.get('app_stamp') and n == '3D/3dmodel.model')}
             geo1 = {n: hashlib.sha256(strip_paint(z1.read(n))).hexdigest()
                     for n in geo0}
-            assert geo0 == geo1, 'geometry changed — aborting'
+            assert geo0 == geo1, 'geometry changed, aborting'
             json.loads(z1.read('Metadata/project_settings.config'))
             if 'Metadata/model_settings.config' in z0.namelist():
                 s0 = z0.read('Metadata/model_settings.config').decode('utf-8')
@@ -1577,7 +1577,7 @@ def convert(src_path, rec, key, mode, single, dome_override, skip_analyse,
                 ET.fromstring(s1)
                 for tag in ('<object ', '<plate', '<model_instance'):
                     assert s0.count(tag) == s1.count(tag), \
-                        f'model_settings lost {tag} entries — aborting'
+                        f'model_settings lost {tag} entries, aborting'
 
         print(f"OK -> {out_path}")
         print(f"open in: {slicer_for(rec)}")

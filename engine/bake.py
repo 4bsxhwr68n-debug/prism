@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Prism bake v2 — registry-driven, multi-printer, four dialects.
+"""Prism bake v2: registry-driven, multi-printer, four dialects.
 
 Builds data/printers/<key>.json for every registry entry by resolving the
 installed slicers' vendor profile trees, matching processes/filaments by
@@ -106,7 +106,7 @@ def spectrum_slots(root, spec):
                             'colour':col[0]})
             if len(out)>=2: return out
     except Exception as e:
-        print(f"[warn] spectrum colour library unreadable ({type(e).__name__}) — using fallback")
+        print(f"[warn] spectrum colour library unreadable ({type(e).__name__}), using fallback")
     return [{'sku':'','name':n,'colour':c} for n,c in spec['fallback']]
 
 _res_cache = {}

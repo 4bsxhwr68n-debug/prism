@@ -3,7 +3,7 @@
 Mechanically transliterated from Snapmaker Orca v2.3.6
 src/libslic3r/filament_mixer_model.h (MIT, (c) 2026 Justin Hayes): a
 degree-4 polynomial regression over 7 inputs trained to approximate Mixbox
-pigment mixing. It is NOT an RGB average — blue plus yellow gives green,
+pigment mixing. It is NOT an RGB average, blue plus yellow gives green,
 which is the whole point for filament.
 
 Generated, not hand-typed. Verified against the header's own test vector.
