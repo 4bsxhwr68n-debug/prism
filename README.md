@@ -27,24 +27,18 @@ Nothing to install on any platform.
 
 | | |
 |---|---|
-| **macOS** | Unzip, drag `Prism.app` where you like. macOS blocks the first open, see below. |
+| **macOS** | Unzip, drag `Prism.app` where you like. Signed and notarised, so it just opens. |
 | **Windows** | Unzip, double-click `Prism.exe`. SmartScreen warns once: More info, Run anyway. |
 | **Linux** | Unpack, run `./prism`. |
 
-Neither binary is signed yet, and on macOS that now costs you a detour. Since
-macOS 15, an unsigned app that arrived over the internet is blocked outright and
-the old right-click-Open trick no longer works. The warning claims the app is
-damaged or cannot be checked for malware, which reads far worse than it is.
+The Mac app is signed by Tradelynx Ltd and notarised by Apple, and it carries
+its own Python, so it needs nothing installed and opens like any other app. On an
+Intel Mac it falls back to a path that still wants the Xcode Command Line Tools:
+the bundled engine is arm64 for now.
 
-**To open it:** try it once, let it be refused, then go to System Settings,
-Privacy and Security, scroll to Security, and click **Open Anyway** next to
-Prism. Do that within an hour of the refusal or macOS forgets and you start
-again. In a terminal, `xattr -dr com.apple.quarantine /path/to/Prism.app` does
-the same thing in one line.
-
-This is worth fixing properly rather than documenting, and
-[notarising it](macos/NOTARISING.md) is the fix. The machinery is in the repo
-and waiting on an Apple Developer membership.
+Windows is not signed, so SmartScreen warns once. Getting past that costs a
+click; getting past the macOS equivalent used to cost a trip through System
+Settings, which is why the Mac side was worth paying for first.
 
 Smaller `-script` variants are also attached for anyone who already has Python 3.
 On Linux those need `zenity`, `kdialog` or `yad` for the file dialog.
@@ -232,11 +226,11 @@ It writes `out_v2/`; copy `printers/` and `index.json` into `engine/data/`.
 
 ## If something goes wrong
 
-**"Prism is damaged and can't be opened"** on macOS. It is not damaged, it is
-unsigned, and macOS 15 and later say this about any unsigned download. Right
-click and Open does not help any more. Use System Settings, Privacy and
-Security, Open Anyway, or run `xattr -dr com.apple.quarantine
-/path/to/Prism.app`. See [Install](#install).
+**"Prism is damaged and can't be opened"** on macOS. You are on a release before
+v1.0.6, which is when the app was notarised. Download the current one. If you
+would rather open the old copy, macOS 15 and later say this about any unsigned
+download, and the way through is System Settings, Privacy and Security, Open
+Anyway, because right-click and Open was removed.
 
 **The file opens with an error about custom gcode.** It is in the wrong slicer.
 Check the one Prism named when it converted.

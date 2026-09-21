@@ -43,6 +43,31 @@ jobs:
           Write-Host "printer list: $n entries"
           & ./dist/Prism.exe --engine --printer u1 --spectrum-list | Select-Object -First 3
 
+      - name: Smoke test the app window
+        shell: pwsh
+        env:
+          PRISM_NO_BROWSER: '1'
+        run: |
+          # The path a double-click takes, never covered before this.
+          $p = Start-Process ./dist/Prism.exe -PassThru -NoNewWindow -RedirectStandardOutput gui.log
+          $url = $null
+          foreach ($i in 1..40) {
+            if (Test-Path gui.log) {
+              $m = Select-String -Path gui.log -Pattern 'Prism running at (\S+)' | Select-Object -First 1
+              if ($m) { $url = $m.Matches[0].Groups[1].Value; break }
+            }
+            Start-Sleep -Milliseconds 500
+          }
+          if (-not $url) { if (Test-Path gui.log) { Get-Content gui.log }; throw "the app window never started" }
+          $body = (Invoke-WebRequest $url -UseBasicParsing).Content
+          if ($body -notmatch '<title>Prism') { throw "page did not render" }
+          Write-Host "app window served $($body.Length) bytes"
+          $tok = ($url -split 't=')[1]; $base = ($url -split '/\?')[0]
+          Invoke-WebRequest "$base/api/bye?t=$tok" -UseBasicParsing | Out-Null
+          foreach ($i in 1..40) { if ($p.HasExited) { break }; Start-Sleep -Seconds 1 }
+          if (-not $p.HasExited) { $p.Kill(); throw "did not exit on goodbye" }
+          Write-Host "exited on goodbye"
+
       - name: Package
         shell: pwsh
         run: |
@@ -99,6 +124,28 @@ jobs:
           [ "$n" -ge 20 ] || { echo "expected the printer list, got $n lines"; exit 1; }
           echo "printer list: $n entries"
           ./dist/prism --engine --printer u1 --spectrum-list | head -3
+
+      - name: Smoke test the app window
+        env:
+          PRISM_NO_BROWSER: '1'
+        run: |
+          # The path a double-click takes. Nothing tested it until now, which is
+          # why a break here would have reached users before CI.
+          ./dist/prism > gui.log 2>&1 &
+          pid=$!
+          for i in $(seq 1 40); do grep -q 'Prism running at' gui.log && break; sleep 0.5; done
+          url=$(sed -n 's/.*Prism running at //p' gui.log | head -1)
+          [ -n "$url" ] || { echo "the app window never started"; cat gui.log; exit 1; }
+          body=$(curl -fsS --max-time 10 "$url")
+          case "$body" in *"<title>Prism"*) ;; *) echo "page did not render"; exit 1;; esac
+          echo "app window served $(printf '%s' "$body" | wc -c) bytes"
+          # And that closing the tab still quits it, which is the other half of
+          # the session fix: too eager and it dies while you look elsewhere.
+          tok=${url#*t=}; base=${url%%/\?*}
+          curl -fsS --max-time 5 "$base/api/bye?t=$tok" > /dev/null
+          for i in $(seq 1 40); do kill -0 $pid 2>/dev/null || break; sleep 1; done
+          if kill -0 $pid 2>/dev/null; then kill $pid; echo "did not exit on goodbye"; exit 1; fi
+          echo "exited on goodbye"
 
       - name: Package
         run: |

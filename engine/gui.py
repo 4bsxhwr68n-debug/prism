@@ -24,8 +24,18 @@ TOKEN = secrets.token_urlsafe(16)
 # Set this to your own page to show a support link in the window and the README.
 # Left as the placeholder it renders nothing, so a wrong link can never ship.
 SUPPORT_URL = 'https://buymeacoffee.com/prismprints'
-IDLE_TIMEOUT = 45.0
+# A hidden browser tab has its timers throttled to roughly once a minute and
+# frozen entirely after a few minutes, so the heartbeat is not proof of life and
+# its absence is not proof of death. The old 45s timeout meant looking at another
+# window for a minute killed the app. This is now only a safety net for a browser
+# that crashed or was force quit, and closing the tab is handled explicitly by
+# the goodbye beacon instead of by waiting for silence.
+IDLE_TIMEOUT = 900.0
+# A reload fires pagehide too, so the beacon starts a countdown rather than
+# quitting outright. The request the reloaded page makes cancels it.
+GOODBYE_GRACE = 20.0
 _last_seen = [time.time()]
+_leaving = [0.0]
 
 
 def engine(args, timeout=900):
@@ -368,7 +378,16 @@ const T=new URLSearchParams(location.search).get('t');
 const api=(p,b)=>fetch(p+'?t='+T,{method:b?'POST':'GET',headers:{'Content-Type':'application/json'},
   body:b?JSON.stringify(b):null}).then(r=>r.json());
 let S={files:[],printer:null,mode:'balanced',spectrum:false,colour:null,palette:[],spectrumOk:false};
-setInterval(()=>api('/api/ping').catch(()=>{}),8000);
+const beat=()=>api('/api/ping').catch(()=>{});
+setInterval(beat,8000);
+/* A hidden tab's timers are throttled and eventually frozen, so beat again the
+   moment the page is looked at rather than waiting for the next tick. */
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)beat();});
+window.addEventListener('focus',beat);
+/* Closing the tab should quit the app promptly instead of leaving it running.
+   pagehide also fires on a reload, so this only starts a countdown, and the
+   reloaded page cancels it with its first request. */
+window.addEventListener('pagehide',()=>{try{navigator.sendBeacon('/api/bye?t='+T);}catch(e){}});
 
 const MODES=[['speed','Speed','Coarser layers, about 0.7× the time'],
  ['balanced','Balanced','The sensible default'],
@@ -508,6 +527,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
     def do_GET(self):
         _last_seen[0] = time.time()
+        _leaving[0] = 0.0
         path = self.path.split('?')[0]
         if not self._auth():
             self.send_error(403)
@@ -523,11 +543,15 @@ class Handler(http.server.BaseHTTPRequestHandler):
             self._send(json.dumps({'printers': printers()}))
         elif path == '/api/ping':
             self._send(json.dumps({'ok': True}))
+        elif path == '/api/bye':
+            _leaving[0] = time.time() + GOODBYE_GRACE
+            self._send(json.dumps({'ok': True}))
         else:
             self.send_error(404)
 
     def do_POST(self):
         _last_seen[0] = time.time()
+        _leaving[0] = 0.0
         path = self.path.split('?')[0]
         if not self._auth():
             self.send_error(403)
@@ -564,6 +588,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 reveal(body.get('path', ''))
                 self._send(json.dumps({'ok': True}))
             elif path == '/api/ping':
+                self._send(json.dumps({'ok': True}))
+            elif path == '/api/bye':
+                _leaving[0] = time.time() + GOODBYE_GRACE
                 self._send(json.dumps({'ok': True}))
             elif path == '/api/convert':
                 args = ['--printer', body.get('printer', ''),
@@ -619,11 +646,18 @@ def main():
     srv.daemon_threads = True
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     url = 'http://127.0.0.1:%d/?t=%s' % (port, TOKEN)
-    print('Prism running at', url)
-    webbrowser.open(url)
+    print('Prism running at', url, flush=True)
+    # CI needs to drive the window without a browser appearing on the runner.
+    if not os.environ.get('PRISM_NO_BROWSER'):
+        webbrowser.open(url)
     try:
-        while time.time() - _last_seen[0] < IDLE_TIMEOUT:
-            time.sleep(2)
+        while True:
+            now = time.time()
+            if _leaving[0] and now > _leaving[0]:
+                break          # the tab was closed and did not come back
+            if now - _last_seen[0] > IDLE_TIMEOUT:
+                break          # nothing at all for 15 minutes
+            time.sleep(1)
     except KeyboardInterrupt:
         pass
     srv.shutdown()
