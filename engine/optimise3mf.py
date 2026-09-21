@@ -276,7 +276,10 @@ def parse_health(tmp, cache=None):
     if not os.path.exists(root_path):
         return {}
     robjs, rcomps = _parse_model(root_path, cache)
-    out = {}
+    # Health is a property of the MESH, so it is computed once per source
+    # object however many times the plate uses it. A plate of 50 copies of two
+    # parts was analysing 14.2 million triangles to describe 568,000.
+    out, seen_health = {}, {}
     src = open(root_path, encoding='utf-8').read()
     for objid, _tr in plate_items(src):
         agg = {'triangles': 0, 'boundary': 0, 'nonmanifold': 0,
@@ -291,7 +294,10 @@ def parse_health(tmp, cache=None):
             V, T = o2[oid]
             if not T:
                 continue
-            h = mesh_health(V, T)
+            ident = (pth or '', oid)
+            if ident not in seen_health:
+                seen_health[ident] = mesh_health(V, T)
+            h = seen_health[ident]
             for k in agg:
                 agg[k] += h[k]
         if agg['triangles']:
