@@ -303,8 +303,13 @@ border-radius:50%;animation:s .7s linear infinite;display:inline-block;vertical-
 <select id="printer"></select></div>
 
 <div class="card off" id="c3"><div class="step"><div class="num">3</div><h2>Model analysis</h2></div>
-<label class="tog" style="margin-bottom:10px"><input type="checkbox" id="orient">
-<span>Also say which way up would need the least support</span></label>
+<div class="row" style="margin-bottom:11px">
+<label class="lbl" for="orient" style="margin:0">Orientation</label>
+<select id="orient" style="width:auto;min-width:290px">
+ <option value="">Leave it as placed</option>
+ <option value="suggest">Tell me which way up needs least support</option>
+ <option value="apply">Turn it for me</option>
+</select></div>
 <pre id="report">—</pre>
 <div class="modes" style="margin-top:12px" id="modes"></div></div>
 
@@ -405,7 +410,7 @@ document.getElementById('explain').onclick=()=>{
 document.getElementById('swwrap').onclick=e=>{const b=e.target.closest('.chip');if(!b)return;
  S.colour=b.dataset.c||null;[...document.querySelectorAll('.chip')].forEach(x=>x.classList.toggle('sel',x===b));};
 
-document.getElementById('orient').onchange=()=>analyse();
+document.getElementById('orient').onchange=()=>{S.orient=document.getElementById('orient').value;analyse();};
 document.getElementById('fs').onchange=e=>{S.spectrum=e.target.checked;
  document.getElementById('fsbody').style.display=S.spectrum?'block':'none';
  if(S.spectrum)probe();refresh();};
@@ -426,7 +431,7 @@ function analyse(){if(!S.files.length||!S.printer)return;
  document.getElementById('c3').classList.remove('off');
  document.getElementById('report').innerHTML='<span class="spin"></span> analysing…';
  api('/api/report',{printer:S.printer,files:S.files,
-   orient:document.getElementById('orient').checked}).then(r=>{
+   orient:!!S.orient}).then(r=>{
   document.getElementById('report').textContent=r.text.trim()||'no analysis available';});}
 
 function refresh(){document.getElementById('go').disabled=!(S.files.length&&S.printer);}
@@ -436,7 +441,8 @@ document.getElementById('go').onclick=()=>{const g=document.getElementById('go')
  document.getElementById('out').textContent='';
  api('/api/convert',{files:S.files,printer:S.printer,mode:S.mode,
    spectrum:S.spectrum,colour:S.colour,sets:collectSets(),
-   supports:document.getElementById('sup').checked?'auto':null}).then(r=>{
+   supports:document.getElementById('sup').checked?'auto':null,
+   orient:S.orient||null}).then(r=>{
   document.getElementById('gohint').textContent='';
   const o=document.getElementById('out');o.innerHTML='';
   const h=document.createElement('div');
@@ -540,6 +546,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
                         args += ['--spectrum-colour', str(body['colour'])]
                 if body.get('supports'):
                     args += ['--supports', str(body['supports'])]
+                if body.get('orient'):
+                    args += ['--orient', str(body['orient'])]
                 for item in (body.get('sets') or []):
                     if '=' in str(item):
                         args += ['--set', str(item)]

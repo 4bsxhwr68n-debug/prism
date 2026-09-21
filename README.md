@@ -223,14 +223,21 @@ rather than a guarantee. `--supports on` and `--supports off` override it.
 ### Which way up
 
 `--orient` reports which orientation would need the least support, and by how
-much. **It never rotates anything.**
+much. `--orient apply` turns it for you. In the window it is a three-way choice:
+leave it as placed, tell me, or turn it.
+
+Turning rewrites **where the object sits**, never the mesh, so the geometry
+guarantee is untouched and verified as usual. Before writing anything it checks
+that the rotation has not mirrored the part, that it still fits the bed, and that
+it lands on the plate rather than in the air. Any of those failing leaves that
+object exactly as it was, with the reason given.
 
     object 4 would print better turned:
       as placed   10958mm2 overhang  152.6mm tall  10424mm2 flat on the plate
       turned       4861mm2 overhang  132.6mm tall   1596mm2 flat on the plate
 
-It is advice rather than an action on purpose. Least overhang is not the same as
-best printed: turning a model changes which faces come out smooth, which way the
+Suggesting is the default on purpose. Least overhang is not the same as best
+printed: turning a model changes which faces come out smooth, which way the
 layers run and therefore where it breaks, and whether a painted model shows its
 detail. None of that is visible in a mesh, and all of it might matter more to you
 than support material.
@@ -253,7 +260,7 @@ and shorter, but a much smaller base.
     --spectrum-colour C         #RRGGBB, a palette id, or a name like Teal
     --spectrum-step MM | off    layer height in painted zones
     --spectrum-biases 25,50,75  blend strengths per pair
-    --orient                    say which way up needs the least support
+    --orient [suggest|apply]    which way up needs least support; apply turns it
     --supports auto|on|off      add supports only where the model needs them
     --keep-source               ignore this printer's standing defaults
     --dome off|H                override the rounded-top layer height

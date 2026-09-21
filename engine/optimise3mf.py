@@ -329,9 +329,113 @@ def suggest_orientation(tris, bed, threshold=30.0):
             'reason': None}
 
 
-def orientation_lines(tmp, rec, skip_analyse):
+def _rotation_to_up(u):
+    """Row-vector rotation taking direction `u` to +Z.
+
+    3mf transforms are row-major and apply as p * M + t, which parse_meshes
+    already relies on, so the matrix wanted here has e1, e2 and u as its
+    COLUMNS. Built from an orthonormal basis rather than an axis-angle formula
+    because the determinant is then provably +1 and a mirrored model is the one
+    failure that would never announce itself."""
+    ux, uy, uz = u
+    L = math.sqrt(ux*ux + uy*uy + uz*uz)
+    if L == 0:
+        return None
+    w = (ux/L, uy/L, uz/L)
+    a = (1.0, 0.0, 0.0) if abs(w[0]) < 0.9 else (0.0, 1.0, 0.0)
+    d = a[0]*w[0] + a[1]*w[1] + a[2]*w[2]
+    e1 = (a[0]-d*w[0], a[1]-d*w[1], a[2]-d*w[2])
+    n = math.sqrt(sum(c*c for c in e1))
+    if n < 1e-9:
+        return None
+    e1 = tuple(c/n for c in e1)
+    e2 = (w[1]*e1[2]-w[2]*e1[1], w[2]*e1[0]-w[0]*e1[2], w[0]*e1[1]-w[1]*e1[0])
+    return [[e1[0], e2[0], w[0]],
+            [e1[1], e2[1], w[1]],
+            [e1[2], e2[2], w[2]]]
+
+
+def _det3(m):
+    return (m[0][0]*(m[1][1]*m[2][2]-m[1][2]*m[2][1])
+            - m[0][1]*(m[1][0]*m[2][2]-m[1][2]*m[2][0])
+            + m[0][2]*(m[1][0]*m[2][1]-m[1][1]*m[2][0]))
+
+
+def apply_orientation(tmp, rec, plan):
+    """Turn the chosen objects by rewriting their placement, never the mesh.
+
+    Every check that could catch a silently wrong result runs here: the
+    rotation must not mirror, the part must land on the plate, and it must
+    still fit. A failure returns the file untouched rather than a print that
+    starts in the air."""
+    rootp = os.path.join(tmp, '3D', '3dmodel.model')
+    if not os.path.exists(rootp) or not plan:
+        return [], False
+    xml = open(rootp, encoding='utf-8').read()
+    bed, notes, done = rec['bed'], [], False
+
+    for oid, info in plan.items():
+        R = _rotation_to_up(info['up'])
+        if R is None or abs(_det3(R) - 1.0) > 1e-6:
+            notes.append('object %s not turned: the rotation was not clean' % oid)
+            continue
+        m = re.search(r'(<item objectid="%s"[^>]*?transform=")([^"]+)(")'
+                      % re.escape(oid), xml)
+        if not m:
+            notes.append('object %s not turned: no placement to rewrite' % oid)
+            continue
+        v = [float(x) for x in m.group(2).split()]
+        if len(v) != 12:
+            notes.append('object %s not turned: unexpected placement' % oid)
+            continue
+        M = [v[0:3], v[3:6], v[6:9]]
+        sign_before = _det3(M)
+        Mn = [[sum(M[i][k]*R[k][j] for k in range(3)) for j in range(3)]
+              for i in range(3)]
+        if sign_before * _det3(Mn) <= 0:
+            notes.append('object %s not turned: it would have been mirrored' % oid)
+            continue
+        tn = [sum(v[9+k]*R[k][j] for k in range(3)) for j in range(3)]
+
+        # Where it lands, from the world-space mesh already parsed. Computed
+        # eagerly: a generator here is evaluated after the loop variable has
+        # moved on, which collapses every point onto the last one and yields a
+        # zero-sized part that passes every bed check.
+        xs, ys, zs = [], [], []
+        for (x, y, z) in info['pts']:
+            xs.append(x*R[0][0] + y*R[1][0] + z*R[2][0])
+            ys.append(x*R[0][1] + y*R[1][1] + z*R[2][1])
+            zs.append(x*R[0][2] + y*R[1][2] + z*R[2][2])
+        w, d, h = max(xs)-min(xs), max(ys)-min(ys), max(zs)-min(zs)
+        if min(w, d, h) < 0.01:
+            notes.append('object %s not turned: it measured as nothing, which '
+                         'means the check failed rather than the part' % oid)
+            continue
+        if w > bed[0] or d > bed[1] or h > bed[2]:
+            notes.append('object %s not turned: %.0fx%.0fx%.0fmm would not fit'
+                         % (oid, w, d, h))
+            continue
+        tn[0] += bed[0]/2.0 - (min(xs)+max(xs))/2.0
+        tn[1] += bed[1]/2.0 - (min(ys)+max(ys))/2.0
+        tn[2] += -min(zs)
+
+        flat = ' '.join(('%.8g' % x) for x in
+                        (Mn[0]+Mn[1]+Mn[2]+tn))
+        xml = xml[:m.start(2)] + flat + xml[m.end(2):]
+        notes.append('object %s turned: %.0fmm2 -> %.0fmm2 overhang, now '
+                     '%.0fx%.0fx%.0fmm and sitting on the plate'
+                     % (oid, info['before'], info['after'], w, d, h))
+        done = True
+
+    if done:
+        open(rootp, 'w', encoding='utf-8', newline='\n').write(xml)
+    return notes, done
+
+
+def orientation_lines(tmp, rec, skip_analyse, plan=None):
     """The orientation advice, worded once and used by both --report and a
-    conversion so the two can never say different things."""
+    conversion so the two can never say different things. When `plan` is a dict
+    it is filled with what would have to change to act on the advice."""
     if skip_analyse:
         return ['orientation not checked (the mesh was not analysed)']
     out, turned = [], False
@@ -342,6 +446,13 @@ def orientation_lines(tmp, rec, skip_analyse):
         c, b = r['current'], r['best']
         if r['changed']:
             turned = True
+            if plan is not None:
+                pts = [q for t in tris for q in t]
+                if len(pts) > 240000:            # enough to bound a solid
+                    step = len(pts) // 240000 + 1
+                    pts = pts[::step]
+                plan[oid] = {'up': b['up'], 'pts': pts,
+                             'before': c['over'], 'after': b['over']}
             out.append('object %s would print better turned:' % oid)
             out.append('  as placed  %6.0fmm2 overhang  %5.1fmm tall  '
                        '%5.0fmm2 flat on the plate' % (c['over'], c['height'], c['flat']))
@@ -1313,7 +1424,17 @@ def convert(src_path, rec, key, mode, single, dome_override, skip_analyse,
             plan['dome_lh'] = dome_override
 
         if orient and mesh_bytes <= ANALYSE_BUDGET_BYTES:
-            report.extend(orientation_lines(tmp, rec, skip_analyse))
+            # NB: not `plan` — that is the mode plan, and shadowing it here
+            # broke every conversion. Second time this exact mistake has cost
+            # an hour in this file.
+            turn_plan = {} if orient == 'apply' else None
+            report.extend(orientation_lines(tmp, rec, skip_analyse, turn_plan))
+            if turn_plan:
+                lines, done = apply_orientation(tmp, rec, turn_plan)
+                report.extend(lines)
+                if done:
+                    report.append('  the mesh is untouched; only where it sits '
+                                  'on the plate has changed')
 
         sup_cfg, sup_why = ({}, [])
         if supports:
@@ -1499,9 +1620,10 @@ def main():
                     help='set any profile key directly; repeatable')
     ap.add_argument('--list-settings', action='store_true',
                     help='print the settings you can change, then exit')
-    ap.add_argument('--orient', action='store_true',
-                    help='say which way up would need the least support; '
-                         'it never rotates anything')
+    ap.add_argument('--orient', nargs='?', const='suggest', default=None,
+                    choices=['suggest', 'apply'],
+                    help="which way up needs the least support. 'suggest' just "
+                         "says so; 'apply' turns it for you")
     ap.add_argument('--supports', choices=['auto', 'on', 'off'], default=None,
                     help='look at the model and add supports only where they are '
                          'actually needed')
