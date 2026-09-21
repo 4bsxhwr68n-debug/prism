@@ -15,9 +15,31 @@ seen it and is offline.
 a Developer ID certificate is only issued to paid members. Everything else here
 is free and takes about twenty minutes once.
 
+One membership covers every app and both platforms, so the same enrolment signs
+Mac apps and ships iOS ones. Prism is currently signed by **Tradelynx Ltd**,
+which is a deliberate choice rather than a permanent one: see "Moving Prism to
+another company" at the end.
+
 ## One-time setup
 
-**1. Join.** https://developer.apple.com/programs/ . Individual is fine.
+**1. Enrol.** https://developer.apple.com/programs/ .
+
+Individual or Organization is the one decision that is awkward to reverse, and
+it is decided by whose name you want on things:
+
+| | Team name in the signature | Needs |
+|---|---|---|
+| **Individual** | your own legal name | an Apple ID, minutes |
+| **Organization** | the company name | a D-U-N-S number, about a week |
+
+Organization is the one to pick if the App Store seller should read as a company
+rather than a person. It requires a
+[D-U-N-S number](https://developer.apple.com/help/account/membership/D-U-N-S/)
+for the legal entity, and that is the slow step: **look the company up first**,
+because a registered company often already has one. If it does not, D&B issue
+one free in up to 5 business days, then Apple takes another 1 to 2 to verify it.
+Start that lookup before anything else, because the rest of enrolment waits on
+it and nothing else in this document does.
 
 **2. Get a Developer ID Application certificate.** In Xcode: Settings, Accounts,
 add the Apple ID, select the team, Manage Certificates, `+`,
@@ -73,6 +95,26 @@ so a file copied over the network on a USB stick does not prove anything.
   one dies with the certificate rather than outliving it.
 - **A nested binary is unsigned.** Everything inside the bundle has to be signed
   with the same identity, inside out.
+
+## Moving Prism to another company later
+
+This is deliberately cheap to do. The bundle identifier is
+`uk.co.prism.optimiser`, which names Prism and not whoever signs it, so moving
+the project changes the signature and nothing else:
+
+1. Get a Developer ID from the new team.
+2. `./macos/build.sh && ./macos/notarise.sh`, exactly as before.
+3. Cut a release.
+
+Copies already downloaded keep working. A stapled ticket stays valid after the
+signing certificate expires, because it records that the app was notarised at a
+point when the certificate was good. The one event that would break old copies
+is Apple *revoking* the certificate, which is not what happens when a membership
+lapses or a project changes hands.
+
+Keep the bundle identifier out of it. If this were `uk.co.tradelynx.prism` a
+move would change the app's identity on every user's machine, which is the sort
+of thing that resets preferences and confuses Gatekeeper for no reason.
 
 ## The one thing notarisation does not fix
 
