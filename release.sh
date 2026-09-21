@@ -10,7 +10,9 @@ TMP="$(mktemp -d)"
 "$HERE/macos/build.sh" "$TMP/Prism.app" >/dev/null
 # ditto, not zip: plain zip mangles bundle metadata and breaks the signature
 ditto -c -k --sequesterRsrc --keepParent "$TMP/Prism.app" "$OUT/Prism-$VER-macOS.zip"
-"$HERE/windows/build.sh" "$OUT/Prism-$VER-Windows.zip" >/dev/null
+"$HERE/windows/build.sh" "$OUT/Prism-$VER-Windows-script.zip"
+"$HERE/linux/build.sh"   "$OUT/Prism-$VER-Linux-script.tar.gz"
+cp "$HERE/docs/COLOUR.md" "$OUT/Prism-$VER-colour-and-painting.md" >/dev/null
 
 rm -rf "$TMP"
 echo "Built:"
