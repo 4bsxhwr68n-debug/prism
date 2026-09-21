@@ -55,12 +55,25 @@ if [ -n "$IDENTITY" ]; then
   # with the certificate instead of outliving it.
   if [ "$BUNDLED" = yes ]; then
     codesign --force --timestamp --options runtime \
+             --entitlements "$HERE/entitlements.plist" \
              --sign "$IDENTITY" "$OUT/Contents/Resources/prism-engine"
   fi
   codesign --force --timestamp --options runtime \
            --entitlements "$HERE/entitlements.plist" \
            --sign "$IDENTITY" "$OUT"
   codesign --verify --strict --verbose=2 "$OUT" 2>&1 | sed 's/^/  /'
+  # A valid signature is not a working app. The hardened runtime refuses to
+  # dlopen a library whose Team ID differs from the process, which is exactly
+  # what a PyInstaller bundle does to itself at startup. That failure passes
+  # codesign --verify, passes spctl, notarises cleanly, and does not run.
+  if [ "$BUNDLED" = yes ]; then
+    env -i HOME="$HOME" PATH=/usr/bin:/bin \
+        "$OUT/Contents/Resources/prism-engine" --engine --list > /dev/null 2>&1 \
+      || { echo "REFUSING TO SHIP: the signed engine does not run."; \
+           env -i HOME="$HOME" PATH=/usr/bin:/bin \
+               "$OUT/Contents/Resources/prism-engine" --engine --list 2>&1 | head -5; \
+           exit 1; }
+  fi
   echo "Built $OUT"
   echo "  engine: $([ "$BUNDLED" = yes ] && echo "bundled, no Python needed" || echo "NOT bundled, needs Xcode CLT on the user's Mac")"
   echo "  signed: $IDENTITY"
