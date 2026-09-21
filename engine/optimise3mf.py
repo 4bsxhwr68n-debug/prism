@@ -415,8 +415,13 @@ def apply_orientation(tmp, rec, plan):
             notes.append('object %s not turned: %.0fx%.0fx%.0fmm would not fit'
                          % (oid, w, d, h))
             continue
-        tn[0] += bed[0]/2.0 - (min(xs)+max(xs))/2.0
-        tn[1] += bed[1]/2.0 - (min(ys)+max(ys))/2.0
+        # Keep it exactly where it was in XY. A multi-plate 3mf lays its plates
+        # out side by side in ONE coordinate space, so recentring on the bed
+        # drags an object off its own plate and on top of whatever is on the
+        # first one. Only the drop onto the plate is corrected.
+        opx = [q[0] for q in info['pts']]; opy = [q[1] for q in info['pts']]
+        tn[0] += (min(opx)+max(opx))/2.0 - (min(xs)+max(xs))/2.0
+        tn[1] += (min(opy)+max(opy))/2.0 - (min(ys)+max(ys))/2.0
         tn[2] += -min(zs)
 
         flat = ' '.join(('%.8g' % x) for x in
