@@ -329,6 +329,34 @@ def suggest_orientation(tris, bed, threshold=30.0):
             'reason': None}
 
 
+def orientation_lines(tmp, rec, skip_analyse):
+    """The orientation advice, worded once and used by both --report and a
+    conversion so the two can never say different things."""
+    if skip_analyse:
+        return ['orientation not checked (the mesh was not analysed)']
+    out, turned = [], False
+    for oid, tris in parse_meshes(tmp).items():
+        r = suggest_orientation(tris, rec['bed'])
+        if not r:
+            continue
+        c, b = r['current'], r['best']
+        if r['changed']:
+            turned = True
+            out.append('object %s would print better turned:' % oid)
+            out.append('  as placed  %6.0fmm2 overhang  %5.1fmm tall  '
+                       '%5.0fmm2 flat on the plate' % (c['over'], c['height'], c['flat']))
+            out.append('  turned     %6.0fmm2 overhang  %5.1fmm tall  '
+                       '%5.0fmm2 flat on the plate' % (b['over'], b['height'], b['flat']))
+        else:
+            out.append('object %s: %s' % (oid, r.get('reason') or
+                       'as placed is already the sensible way up'))
+    if turned:
+        out.append('Prism does not rotate anything. Turning a model changes which '
+                   'faces come out smooth and which way the layers run, and the '
+                   'mesh cannot tell you that.')
+    return out
+
+
 def plan_supports(metrics, want):
     """Decide whether this model needs supports, and keep them to a minimum.
 
@@ -1285,26 +1313,7 @@ def convert(src_path, rec, key, mode, single, dome_override, skip_analyse,
             plan['dome_lh'] = dome_override
 
         if orient and mesh_bytes <= ANALYSE_BUDGET_BYTES:
-            for oid, tris in parse_meshes(tmp).items():
-                r = suggest_orientation(tris, rec['bed'])
-                if not r:
-                    continue
-                c, b = r['current'], r['best']
-                if r['changed']:
-                    report.append('object %s would print better turned:' % oid)
-                    report.append('  as placed  %6.0fmm2 overhang  %5.1fmm tall  '
-                                  '%5.0fmm2 flat on the plate'
-                                  % (c['over'], c['height'], c['flat']))
-                    report.append('  turned     %6.0fmm2 overhang  %5.1fmm tall  '
-                                  '%5.0fmm2 flat on the plate'
-                                  % (b['over'], b['height'], b['flat']))
-                else:
-                    report.append('object %s: %s' % (oid, r.get('reason') or
-                                  'as placed is already the sensible way up'))
-            if any('turned' in x for x in report):
-                report.append('  Prism does not rotate anything. Turning a model '
-                              'changes which faces come out smooth and which way '
-                              'the layers run, and the mesh cannot tell you that.')
+            report.extend(orientation_lines(tmp, rec, skip_analyse))
 
         sup_cfg, sup_why = ({}, [])
         if supports:
@@ -1424,7 +1433,7 @@ def convert(src_path, rec, key, mode, single, dome_override, skip_analyse,
         shutil.rmtree(tmp, ignore_errors=True)
 
 
-def run_report(files, rec, skip_analyse):
+def run_report(files, rec, skip_analyse, orient=False):
     for f in files:
         tmp = tempfile.mkdtemp(prefix='3mfrep_')
         try:
@@ -1446,6 +1455,9 @@ def run_report(files, rec, skip_analyse):
             support_on = str(src_cfg.get('enable_support', '0')) == '1'
             for line in describe(f, metrics, plans, support_on):
                 print(line)
+            if orient:
+                for line in orientation_lines(tmp, rec, skip_analyse):
+                    print('  ' + line)
         finally:
             shutil.rmtree(tmp, ignore_errors=True)
 
@@ -1562,7 +1574,7 @@ def main():
         sel = input("Printer number: ").strip()
         key = keys[int(sel) - 1]
         rec = load_printer(key)
-        run_report(a.files, rec, a.no_analyse)
+        run_report(a.files, rec, a.no_analyse, a.orient)
         m = input("Mode [1=speed 2=balanced 3=quality] (2): ").strip() or '2'
         mode = {'1': 'speed', '2': 'balanced', '3': 'quality'}[m]
         if rec.get('spectrum') and not a.spectrum:
@@ -1583,7 +1595,7 @@ def main():
         key = a.printer
         rec = load_printer(key)
         if a.report:
-            run_report(a.files, rec, a.no_analyse)
+            run_report(a.files, rec, a.no_analyse, a.orient)
             return
         mode = a.mode
 

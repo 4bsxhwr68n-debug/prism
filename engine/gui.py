@@ -303,6 +303,8 @@ border-radius:50%;animation:s .7s linear infinite;display:inline-block;vertical-
 <select id="printer"></select></div>
 
 <div class="card off" id="c3"><div class="step"><div class="num">3</div><h2>Model analysis</h2></div>
+<label class="tog" style="margin-bottom:10px"><input type="checkbox" id="orient">
+<span>Also say which way up would need the least support</span></label>
 <pre id="report">—</pre>
 <div class="modes" style="margin-top:12px" id="modes"></div></div>
 
@@ -403,6 +405,7 @@ document.getElementById('explain').onclick=()=>{
 document.getElementById('swwrap').onclick=e=>{const b=e.target.closest('.chip');if(!b)return;
  S.colour=b.dataset.c||null;[...document.querySelectorAll('.chip')].forEach(x=>x.classList.toggle('sel',x===b));};
 
+document.getElementById('orient').onchange=()=>analyse();
 document.getElementById('fs').onchange=e=>{S.spectrum=e.target.checked;
  document.getElementById('fsbody').style.display=S.spectrum?'block':'none';
  if(S.spectrum)probe();refresh();};
@@ -422,7 +425,8 @@ document.getElementById('pick').onclick=()=>api('/api/pick',{}).then(r=>{
 function analyse(){if(!S.files.length||!S.printer)return;
  document.getElementById('c3').classList.remove('off');
  document.getElementById('report').innerHTML='<span class="spin"></span> analysing…';
- api('/api/report',{printer:S.printer,files:S.files}).then(r=>{
+ api('/api/report',{printer:S.printer,files:S.files,
+   orient:document.getElementById('orient').checked}).then(r=>{
   document.getElementById('report').textContent=r.text.trim()||'no analysis available';});}
 
 function refresh(){document.getElementById('go').disabled=!(S.files.length&&S.printer);}
@@ -517,8 +521,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 rc, out, _ = engine(['--spectrum-probe'] + files)
                 self._send(json.dumps({'colours': int((out.strip() or '0').split()[0])}))
             elif path == '/api/report':
-                rc, out, err = engine(['--printer', body.get('printer', ''),
-                                       '--report'] + files)
+                rargs = ['--printer', body.get('printer', ''), '--report']
+                if body.get('orient'):
+                    rargs.append('--orient')
+                rc, out, err = engine(rargs + files)
                 self._send(json.dumps({'text': out or err}))
             elif path == '/api/reveal':
                 reveal(body.get('path', ''))
