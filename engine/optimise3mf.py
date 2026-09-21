@@ -1380,6 +1380,56 @@ def apply_spectrum(out, rec, n, spectrum, plan, notes):
     return palette
 
 
+# What costs time. Prism does not slice, so it cannot give you minutes, but it
+# can name the settings that are spending them. The complaint behind this is
+# that most "slow printers" are cautious defaults nobody revisited after the
+# first test cube: walls stacked up, infill left high, thick top and bottom.
+# Stated as a question, never as a correction. A structural bracket SHOULD have
+# six walls, and the tool does not know what the part is for.
+SLOW_RULES = (
+    ('wall_loops', 4, 'walls',
+     'each wall is another full perimeter on every layer; 2 or 3 suits most '
+     'decorative prints, more is for parts that carry load'),
+    ('sparse_infill_density', 25, 'infill',
+     'infill is the slowest thing in most prints; 10 to 15 percent is plenty '
+     'unless the part bears weight'),
+    ('top_shell_layers', 6, 'top layers',
+     'solid layers are slow; more than about 5 rarely looks any better'),
+    ('bottom_shell_layers', 6, 'bottom layers',
+     'the bed already gives a flat face, so extra solid layers underneath buy '
+     'little'),
+)
+
+
+def _num(v):
+    """A setting as a number, or None. Values arrive as strings, sometimes
+    per-slot lists, and percentages carry their sign."""
+    if isinstance(v, list):
+        v = v[0] if v else None
+    if v is None:
+        return None
+    try:
+        return float(str(v).strip().rstrip('%'))
+    except ValueError:
+        return None
+
+
+def slow_notes(settings):
+    """Settings that are spending time, worth a look before a long print."""
+    out = []
+    for key, limit, label, why in SLOW_RULES:
+        n = _num(settings.get(key))
+        if n is not None and n >= limit:
+            shown = f"{n:g}%" if key.endswith('density') else f"{n:g}"
+            out.append(f"{label} {shown}: {why}")
+    if str(_num(settings.get('ironing_type')) or
+           settings.get('ironing_type') or 'no ironing') not in (
+            'no ironing', 'None', 'none', '0'):
+        out.append('ironing is on: it adds a slow pass over every flat top, '
+                   'which is worth it for a visible surface and not otherwise')
+    return out
+
+
 def build_project_settings(src, rec, single, plan, notes, spectrum=None,
                            keep_source=False, overrides=None, supports=None):
     tpl = rec['template']
@@ -1451,6 +1501,20 @@ def build_project_settings(src, rec, single, plan, notes, spectrum=None,
         carried.append(f"{k}={v}")
     if carried: notes.append("carried: " + ", ".join(carried))
     if dropped: notes.append("dropped: " + ", ".join(dropped))
+    # The whole picture, not only the part we touched. The complaint this
+    # answers is the one the forums repeat about every shared project file:
+    # "all the settings are lost, as if they never existed". Most of them are
+    # SUPPOSED to be, because a nozzle temperature, an acceleration limit and a
+    # bed size describe the machine rather than the design, and carrying them
+    # to a different printer is how you get a ruined print. Nobody was ever
+    # told that, so losing them and discarding them looked identical.
+    if src:
+        rest = max(0, len(src) - len(carried_keys) - len(dropped))
+        notes.append(
+            f"of {len(src)} settings in your file: {len(carried_keys)} kept, "
+            f"{len(dropped)} could not transfer, {rest} replaced by the "
+            f"{rec['label']} profile because they describe the printer "
+            "(temperatures, speeds, machine limits) and not the model")
 
     # Standing preferences for this machine. They run after the carry, so they
     # are the last word: these are the operator's settings for their own
@@ -1553,6 +1617,11 @@ def build_project_settings(src, rec, single, plan, notes, spectrum=None,
 
     out['version'] = rec['project_version']
     out['from'] = 'project'
+    # Last, because it judges the settings as they will actually be written,
+    # after the carry and after this machine's standing preferences.
+    for sn in slow_notes(out):
+        notes.append(f"time: {sn}")
+
     return out, n
 
 
