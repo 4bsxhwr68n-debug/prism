@@ -25,34 +25,32 @@ if not "%~1"=="" goto convert
 
 rem No files: open the app window in the default browser.
 rem
-rem pythonw has no console, so anything the app writes is thrown away and a
-rem failure to start looks exactly like nothing happening: no window, no error,
-rem nothing to report. Capture both streams, wait long enough for an immediate
-rem failure to land, and judge by whether the server announced itself rather
-rem than by whether stderr is empty, because a harmless warning is not a
-rem failure.
-set OUT=%TEMP%\prism-out.log
-set ERR=%TEMP%\prism-err.log
-if exist "%OUT%" del "%OUT%" >nul 2>nul
+rem pythonw has no console, so anything it writes is discarded and a failure to
+rem start looks exactly like nothing happening: no window, no error, nothing to
+rem report. So check first with the console interpreter, which CAN report, and
+rem only then launch detached. Importing gui runs no server, it just proves the
+rem interpreter can load the app.
+rem
+rem Do not be tempted to capture the real launch with `start /B ... >log`:
+rem cmd then stays attached for the life of the app, so the console window sits
+rem open until Prism exits. CI caught exactly that.
+set ERR=%TEMP%\prism-start.log
 if exist "%ERR%" del "%ERR%" >nul 2>nul
-start "" /B %PYW% "%GUI%" >"%OUT%" 2>"%ERR%"
-rem ping is the portable sleep here: timeout fails when stdin is redirected.
-ping -n 4 127.0.0.1 >nul 2>nul
-findstr /C:"Prism running at" "%OUT%" >nul 2>nul && goto started
+%PY% -c "import sys; sys.path.insert(0, r'%DIR%engine'); import gui" 2>"%ERR%"
+if errorlevel 1 goto failed
+start "" %PYW% "%GUI%"
+exit /b 0
 
-echo Prism could not start.
+:failed
+echo Prism could not start. Python reported:
 echo.
 if exist "%ERR%" type "%ERR%"
-if exist "%OUT%" type "%OUT%"
 echo.
 echo Please report this at:
 echo   https://github.com/4bsxhwr68n-debug/prism/issues
 echo.
 pause
 exit /b 1
-
-:started
-exit /b 0
 
 :convert
 %PY% "%SCRIPT%" --interactive %*

@@ -80,11 +80,19 @@ jobs:
           New-Item -ItemType Directory -Path scripttest -Force | Out-Null
           Copy-Item windows/Prism.bat scripttest/
           Copy-Item -Recurse engine scripttest/engine
+          $sw = [Diagnostics.Stopwatch]::StartNew()
           Push-Location scripttest
           $out = & cmd /c "Prism.bat <nul 2>&1"
           Pop-Location
+          $sw.Stop()
           if ($out -match 'could not start') { $out; throw "the launcher could not start the app" }
-          Write-Host "launcher started the app window"
+          # It must RETURN, not stay attached for the life of the app. An
+          # earlier version blocked for the full 900s idle timeout, which would
+          # have left a console window open on the user's desktop all session.
+          if ($sw.Elapsed.TotalSeconds -gt 60) {
+            throw "launcher blocked $([int]$sw.Elapsed.TotalSeconds)s instead of returning"
+          }
+          Write-Host "launcher returned in $([int]$sw.Elapsed.TotalSeconds)s and started the app"
           Get-Process pythonw -ErrorAction SilentlyContinue | Stop-Process -Force
 
           # Control: break the app and require the launcher to SAY so. Without
