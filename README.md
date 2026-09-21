@@ -138,11 +138,25 @@ ever being told. "Explain every setting" opens all of them at once.
 
 ![Advanced settings](docs/advanced.png)
 
-    --infill gyroid              --walls 3
-    --infill-density 25          --top-layers 5
-    --interface-layers 3         --bottom-layers 3
-    --top-z 0.25                 --seam aligned
-    --support-style tree_slim    --brim outer_only
+The three fans are sliders, because the U1's are strong enough that the useful
+question is "how much less" rather than a number typed from nothing. Part
+cooling, the auxiliary chamber fan, and a separate speed used only over
+overhangs and bridges where the plastic has to set in the air. Turning the main
+fan down also caps its minimum, since the cooling logic ramps between the two
+and crossed values do nothing sensible.
+
+Fan speeds live in the filament presets rather than the process, so Prism
+declares them there. Written into the process entry they would be silently
+reloaded from the preset, which is exactly how the infill setting used to
+revert.
+
+    --fan 60                     --infill gyroid
+    --aux-fan 30                 --infill-density 25
+    --overhang-fan 90            --walls 3
+    --interface-layers 3         --top-layers 5
+    --top-z 0.25                 --bottom-layers 3
+    --support-style tree_slim    --seam aligned
+    --brim outer_only
 
 `--list-settings` prints these with each printer's current value and every
 allowed option. For anything the flags do not cover, `--set KEY=VALUE` reaches
