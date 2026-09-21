@@ -68,6 +68,35 @@ jobs:
           if (-not $p.HasExited) { $p.Kill(); throw "did not exit on goodbye" }
           Write-Host "exited on goodbye"
 
+      - name: Smoke test the script launcher
+        shell: pwsh
+        env:
+          PRISM_NO_BROWSER: '1'
+        run: |
+          # The script zip's path: Prism.bat launching through pythonw, which
+          # has no console. A failure there used to produce no window and no
+          # message, which is unreportable by the person it happens to.
+          # <nul is required: the failure path ends in `pause`.
+          New-Item -ItemType Directory -Path scripttest -Force | Out-Null
+          Copy-Item windows/Prism.bat scripttest/
+          Copy-Item -Recurse engine scripttest/engine
+          Push-Location scripttest
+          $out = & cmd /c "Prism.bat <nul 2>&1"
+          Pop-Location
+          if ($out -match 'could not start') { $out; throw "the launcher could not start the app" }
+          Write-Host "launcher started the app window"
+          Get-Process pythonw -ErrorAction SilentlyContinue | Stop-Process -Force
+
+          # Control: break the app and require the launcher to SAY so. Without
+          # this the check above would pass just as happily on a launcher that
+          # swallows everything, which is the bug being fixed.
+          Set-Content scripttest/engine/gui.py 'raise SystemExit("deliberate failure for the control test")'
+          Push-Location scripttest
+          $bad = & cmd /c "Prism.bat <nul 2>&1"
+          Pop-Location
+          if ($bad -notmatch 'could not start') { $bad; throw "a broken app launched silently: this check proves nothing" }
+          Write-Host "control: a broken app is reported, not swallowed"
+
       - name: Package
         shell: pwsh
         run: |
