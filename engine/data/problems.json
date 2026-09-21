@@ -1,0 +1,244 @@
+{
+ "colours came out wrong": {
+  "aliases": [
+   "blend wrong",
+   "came out grey",
+   "colour not right",
+   "colours came out wrong",
+   "colours wrong",
+   "wrong colour"
+  ],
+  "causes": [
+   "The blended palette has no white and no black, so dark, muted and pale colours cannot be reached and the nearest is used instead."
+  ],
+  "grounded": "colour",
+  "looks": "Blended colours print brighter, paler or simply different from what the model specified.",
+  "settings": []
+ },
+ "does not fit the plate": {
+  "aliases": [
+   "does not fit",
+   "does not fit the plate",
+   "exceeds bed",
+   "larger than build plate",
+   "too big"
+  ],
+  "causes": [
+   "The model is larger than the target printer's build volume, which is easy to miss when a file was made for a bigger machine."
+  ],
+  "grounded": "bedfit",
+  "looks": "The slicer refuses the model, or silently places it hanging off the plate.",
+  "settings": []
+ },
+ "elephant foot": {
+  "aliases": [
+   "elephant foot",
+   "first layer bulge",
+   "flared base",
+   "squished first layer",
+   "wider at the bottom"
+  ],
+  "causes": [
+   "The nozzle is slightly too close to the plate on the first layer.",
+   "The bed is hotter than the material needs, keeping the base soft."
+  ],
+  "grounded": null,
+  "looks": "The bottom one or two layers bulge out wider than the rest of the part.",
+  "note": "Prism cannot see this: it is first layer calibration, not a project setting.",
+  "settings": []
+ },
+ "failed partway up": {
+  "aliases": [
+   "broke off",
+   "came off mid print",
+   "collapsed",
+   "failed at 80%",
+   "failed partway up",
+   "fell over",
+   "print failed"
+  ],
+  "causes": [
+   "An overhang that had no support under it, so the first layer over thin air curled up and the nozzle struck it.",
+   "Supports that were generated but too thin or too tall to stay standing.",
+   "The part came away from the plate, usually a corner lifting first."
+  ],
+  "grounded": "overhang",
+  "looks": "The print goes well for hours and then a section collapses, or the part detaches and the printer carries on extruding into air.",
+  "settings": [
+   "support_type",
+   "support_threshold_angle",
+   "support_style",
+   "brim_type"
+  ]
+ },
+ "layer shifts": {
+  "aliases": [
+   "layer shifts",
+   "layers shifted",
+   "offset layers",
+   "print skewed",
+   "shifted mid print"
+  ],
+  "causes": [
+   "The nozzle struck something, usually a curled overhang or a knocked-over support, and the belt skipped.",
+   "A mechanical problem: loose belt, binding rail, or a pulley grub screw."
+  ],
+  "grounded": "overhang",
+  "looks": "The print continues but everything above a certain height is offset sideways.",
+  "note": "If it happens at the same height every time, look at the model. If it happens at random heights, look at the printer.",
+  "settings": [
+   "support_type",
+   "support_threshold_angle"
+  ]
+ },
+ "print is too slow": {
+  "aliases": [
+   "how to speed up",
+   "print is too slow",
+   "print time too long",
+   "slow",
+   "taking forever"
+  ],
+  "causes": [
+   "Walls, infill and solid layers stacked up by cautious defaults nobody revisited.",
+   "Layer height left fine when the model does not need it.",
+   "Ironing on over large flat areas."
+  ],
+  "grounded": "slow",
+  "looks": "A small model quotes many hours.",
+  "settings": [
+   "layer_height",
+   "wall_loops",
+   "sparse_infill_density",
+   "top_shell_layers",
+   "ironing_type"
+  ]
+ },
+ "rough or pillowing top": {
+  "aliases": [
+   "bad top surface",
+   "gaps in top",
+   "holes in top",
+   "pillowing",
+   "rough or pillowing top",
+   "top looks rough"
+  ],
+  "causes": [
+   "Not enough solid layers on top to bridge the gaps in the infill below.",
+   "Infill too sparse, so the solid layers have too far to span.",
+   "Too little cooling, so the strands sag before they set."
+  ],
+  "grounded": "topsurface",
+  "looks": "The top face is lumpy, or has small holes, as though it did not quite close over.",
+  "settings": [
+   "top_shell_layers",
+   "sparse_infill_density",
+   "fan_max_speed",
+   "ironing_type"
+  ]
+ },
+ "stringing": {
+  "aliases": [
+   "cobwebs",
+   "hairs",
+   "spider webs",
+   "stringing",
+   "strings",
+   "wisps"
+  ],
+  "causes": [
+   "Damp filament, which is by far the most common cause and gets worse over weeks in an open room.",
+   "Retraction too short or too slow.",
+   "Nozzle temperature higher than the filament needs."
+  ],
+  "grounded": null,
+  "looks": "Fine threads strung between separate parts of the print.",
+  "note": "Prism cannot see this in your file. It is a filament and hardware matter: dry the spool first, before changing any setting.",
+  "settings": []
+ },
+ "supports will not come off": {
+  "aliases": [
+   "cannot remove supports",
+   "hard to remove",
+   "supports fused",
+   "supports stuck",
+   "supports will not come off"
+  ],
+  "causes": [
+   "The vertical gap between support and model is too small, so the two fused.",
+   "No interface layers, so the model printed straight onto sparse support lines and keyed into them."
+  ],
+  "grounded": "supportsettings",
+  "looks": "The supports are welded to the part and come away only with pliers, taking surface with them.",
+  "settings": [
+   "support_top_z_distance",
+   "support_interface_top_layers",
+   "support_style"
+  ]
+ },
+ "visible seam": {
+  "aliases": [
+   "line up the side",
+   "scar",
+   "seam",
+   "visible seam",
+   "z seam"
+  ],
+  "causes": [
+   "Every layer has to start and stop somewhere, so the seam always exists. The question is only where it goes and whether it is aligned."
+  ],
+  "grounded": null,
+  "looks": "A vertical line of blobs or a groove running up the part where each layer started.",
+  "note": "This one cannot be removed, only placed. Aligned puts it in a straight line you can hide or sand.",
+  "settings": [
+   "seam_position",
+   "wall_generator"
+  ]
+ },
+ "warping": {
+  "aliases": [
+   "bed adhesion",
+   "corners lifting",
+   "curling",
+   "lifting off the bed",
+   "warped",
+   "warping"
+  ],
+  "causes": [
+   "The part cooled unevenly, shrinking as it went. ABS, ASA and PETG do this far more than PLA.",
+   "Too much part cooling for the material.",
+   "A plate that is not clean. Skin oils are the usual culprit."
+  ],
+  "grounded": "warp",
+  "looks": "Corners peel up from the plate, and the base ends up curved.",
+  "settings": [
+   "brim_type",
+   "brim_width",
+   "fan_max_speed",
+   "additional_cooling_fan_speed"
+  ]
+ },
+ "weak or brittle parts": {
+  "aliases": [
+   "brittle",
+   "broke easily",
+   "delamination",
+   "layers separating",
+   "snapped",
+   "weak",
+   "weak or brittle parts"
+  ],
+  "causes": [
+   "Too much cooling, which stops each layer welding properly to the one below.",
+   "Too few walls. Adding walls strengthens a part more efficiently than adding infill.",
+   "Printed in an orientation that puts the load across the layers rather than along them."
+  ],
+  "grounded": "strength",
+  "looks": "The part breaks along a layer line under modest load.",
+  "settings": [
+   "wall_loops",
+   "fan_max_speed",
+   "sparse_infill_density"
+  ]
+ }
+}

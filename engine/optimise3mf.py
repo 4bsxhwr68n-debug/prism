@@ -1265,6 +1265,192 @@ def save_prefs(overrides):
     return path
 
 
+# Setting explanations. The gap this fills: a K2 profile has 575 keys and the
+# slicer explains almost none of them, so people change things by rumour. This
+# is deterministic, offline and free, which an AI answer box would not be, and
+# every word is reviewable in engine/data/settings-help.json.
+def load_help():
+    try:
+        with open(os.path.join(TOOL_DIR, 'data', 'settings-help.json'),
+                  encoding='utf-8') as fh:
+            return json.load(fh)
+    except Exception:
+        return {}
+
+
+def find_setting(term, helpdb):
+    """Best matches for what someone typed.
+
+    People know the slicer's label, not the profile key: nobody types
+    sparse_infill_density, they type "infill". So match keys, labels and
+    aliases, exact first, then prefix, then substring."""
+    t = ' '.join(term.lower().replace('_', ' ').split())
+    exact, starts, holds = [], [], []
+    for key, e in helpdb.items():
+        names = [key.replace('_', ' ').lower(), e['label'].lower()]
+        names += [a.lower() for a in e.get('aliases', ())]
+        if t in names:
+            exact.append(key)
+        elif any(n.startswith(t) for n in names):
+            starts.append(key)
+        elif any(t in n for n in names):
+            holds.append(key)
+    return exact or starts or holds
+
+
+def explain_lines(key, entry, rec=None):
+    out = ['%s  (%s)' % (entry['label'], key), '']
+    out.append('  ' + entry['what'])
+    for tag, label in (('more', 'Higher, or on'), ('less', 'Lower, or off')):
+        if entry.get(tag):
+            out += ['', '  %s: %s' % (label, entry[tag])]
+    if entry.get('use'):
+        out += ['', '  In practice: ' + entry['use']]
+    if entry.get('cost'):
+        out += ['', '  What it costs: ' + entry['cost']]
+    if rec:
+        # Ground it in the machine actually selected, so the advice is not
+        # abstract: the value it has now, and what it is allowed to be.
+        cur = rec['template'].get(key)
+        if isinstance(cur, list):
+            cur = cur[0] if cur else None
+        allowed = rec['enums'].get(key)
+        if cur is not None:
+            out += ['', '  On %s right now: %s' % (rec['label'], cur)]
+        if allowed:
+            out.append('  Allowed here: ' + ', '.join(sorted(allowed)))
+        dflt = (rec.get('defaults') or {}).get(key)
+        if dflt:
+            out.append('  Prism sets: %s' % dflt)
+    return out
+
+
+def explain(term, rec=None):
+    db = load_help()
+    if not db:
+        return ['No settings guide is installed.']
+    hits = find_setting(term, db)
+    if not hits:
+        # Honest about the boundary: the profile may still have it, and saying
+        # so beats pretending the setting does not exist.
+        known = rec and term in rec['template']
+        msg = ['Nothing written about %r yet.' % term]
+        if known:
+            msg.append('%s does have that setting; --list-settings shows its '
+                       'value and what it accepts.' % rec['label'])
+        msg.append('Documented so far: ' + ', '.join(sorted(db)))
+        return msg
+    if len(hits) > 1:
+        return (['%r matches several settings:' % term] +
+                ['  %-32s %s' % (k, db[k]['label']) for k in sorted(hits)] +
+                ['', 'Ask for one of those by name.'])
+    return explain_lines(hits[0], db[hits[0]], rec)
+
+
+def load_problems():
+    try:
+        with open(os.path.join(TOOL_DIR, 'data', 'problems.json'),
+                  encoding='utf-8') as fh:
+            return json.load(fh)
+    except Exception:
+        return {}
+
+
+def problem_findings(kind, paths, rec):
+    """What Prism can actually SEE about this symptom in these files.
+
+    This is the whole reason to answer the question here rather than in a chat
+    window: a general answer about failed prints is a guess, and "object 4 has
+    a 151mm2 overhang and supports are off" is not."""
+    if not kind or not paths or not rec:
+        return []
+    found = []
+    for path in paths:
+        try:
+            with tempfile.TemporaryDirectory() as tmp:
+                with zipfile.ZipFile(path) as z:
+                    z.extractall(tmp)
+                sp = os.path.join(tmp, 'Metadata', 'project_settings.config')
+                cfg = {}
+                if os.path.exists(sp):
+                    with open(sp, encoding='utf-8') as fh:
+                        cfg = json.load(fh)
+                metrics, _ = analyse_file(tmp, rec['bed'], False)
+        except Exception as e:
+            # Say so. Swallowing this silently made a crash look like a clean
+            # bill of health, which is the worst way for a check to fail.
+            found.append('%s could not be examined (%s)'
+                         % (os.path.basename(path), type(e).__name__))
+            continue
+        name = os.path.basename(path)
+        if kind == 'overhang' and metrics:
+            on = str(cfg.get('enable_support', '0')) in ('1', 'true', 'True')
+            for o, m in metrics.items():
+                if m['down_flat'] > 60:
+                    found.append('%s object %s: %.0fmm2 of overhang, supports '
+                                 'are %s' % (name, o, m['down_flat'],
+                                             'on' if on else 'OFF'))
+        elif kind == 'bedfit' and metrics:
+            for o, m in metrics.items():
+                if m['oversize']:
+                    found.append('%s object %s: %.0fx%.0fx%.0fmm, larger than '
+                                 'the %s plate' % (name, o, *m['dims'],
+                                                   rec['label']))
+        elif kind == 'slow':
+            for sn in slow_notes(cfg):
+                found.append('%s: %s' % (name, sn))
+        elif kind == 'supportsettings':
+            for k in ('support_top_z_distance', 'support_interface_top_layers'):
+                if k in cfg:
+                    found.append('%s: %s is %s' % (name, k, cfg[k]))
+        elif kind == 'topsurface':
+            for k in ('top_shell_layers', 'sparse_infill_density'):
+                if k in cfg:
+                    found.append('%s: %s is %s' % (name, k, cfg[k]))
+        elif kind == 'strength':
+            for k in ('wall_loops', 'sparse_infill_density'):
+                if k in cfg:
+                    found.append('%s: %s is %s' % (name, k, cfg[k]))
+        elif kind == 'warp':
+            found.append('%s: brim is %s' % (name, cfg.get('brim_type', 'not set')))
+        elif kind == 'colour' and rec.get('spectrum'):
+            found.extend(l for l in colour_preview([path], rec, SPECTRUM_BIASES)[1:]
+                         if 'dE' in l or 'no dark end' in l)
+    return found
+
+
+def diagnose(term, paths, rec):
+    db = load_problems()
+    if not db:
+        return ['No troubleshooting guide is installed.']
+    t = ' '.join(term.lower().split())
+    hits = [k for k, v in db.items()
+            if t == k or t in v['aliases']] or \
+           [k for k, v in db.items()
+            if any(t in a or a in t for a in v['aliases'])]
+    if not hits:
+        return (['Nothing written about %r yet.' % term, '',
+                 'Symptoms covered:'] +
+                ['  %s' % k for k in sorted(db)])
+    if len(hits) > 1:
+        return (['%r matches several:' % term] + ['  %s' % k for k in sorted(hits)])
+    key = hits[0]
+    e = db[key]
+    out = [key.upper(), '', '  ' + e['looks'], '', '  Likely causes, most common first:']
+    out += ['    %d. %s' % (i, c) for i, c in enumerate(e['causes'], 1)]
+    if e.get('note'):
+        out += ['', '  ' + e['note']]
+    findings = problem_findings(e.get('grounded'), paths, rec)
+    if findings:
+        out += ['', '  In your file:'] + ['    ' + f for f in findings]
+    elif e.get('grounded') and paths:
+        out += ['', '  Nothing in your file points to this one.']
+    if e.get('settings'):
+        out += ['', '  Settings involved (use --explain for any of them):']
+        out += ['    ' + k for k in e['settings']]
+    return out
+
+
 def colour_preview(paths, rec, biases):
     """What this model's colours would become, BEFORE anything is written.
 
@@ -1955,6 +2141,10 @@ def main():
                          "(default: half the layer height, which hides flat-face banding)")
     ap.add_argument('--spectrum-list', action='store_true',
                     help='print every colour this printer can make, then exit')
+    ap.add_argument('--fix', metavar='SYMPTOM',
+                    help='what causes a problem, checked against your file')
+    ap.add_argument('--explain', metavar='SETTING',
+                    help='what a setting does, and how to use it')
     ap.add_argument('--save-prefs', action='store_true',
                     help='remember this run\'s settings as your defaults')
     ap.add_argument('--no-prefs', action='store_true',
@@ -2026,6 +2216,16 @@ def main():
             print("  %-30s %s" % (k, ', '.join(sorted(enums[k]))))
         print("\nanything else in the profile: --set KEY=VALUE  (%d keys)"
               % len(tpl))
+        return
+    if a.fix:
+        rec = load_printer(a.printer) if a.printer else None
+        for line in diagnose(a.fix, [os.path.abspath(f) for f in a.files], rec):
+            print(line)
+        return
+    if a.explain:
+        rec = load_printer(a.printer) if a.printer else None
+        for line in explain(a.explain, rec):
+            print(line)
         return
     if a.show_prefs:
         pr = load_prefs()

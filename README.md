@@ -84,6 +84,12 @@ data](#rebuilding-the-printer-data).
   cannot honour are dropped and named, not silently accepted.
 - Reads the mesh. Rounded tops that would print as stair rings get a finer layer
   height, and bed fit and overhangs are reported per object.
+- **Checks the mesh and says what is wrong with it.** Holes, edges where the
+  surface meets itself, stray shells. Reported, never repaired, because the
+  promise below is worth more than the convenience.
+- **Accounts for every setting in your file**, so "we left your printer's
+  temperatures behind on purpose" cannot be mistaken for "we lost your
+  settings", and names the ones costing you time.
 - **Never modifies geometry.** Hash-verified on every run, with the plate, object
   and instance structure asserted intact.
 
@@ -149,7 +155,34 @@ Run `--spectrum-list`, or open the colour picker, and design around what the
 printer can actually make. Blending also roughly doubles print time, and the
 prime tower uses about 0.11g per tool change.
 
+`--colour-preview` answers this for your actual model before you convert
+anything, naming each colour it cannot reach and what it would use instead.
+
 **[Full colour and painting guide](docs/COLOUR.md)** covers the rest.
+
+## When you do not know what a setting does
+
+A Creality K2 profile has 575 settings and the slicer explains almost none of
+them, so people change things by rumour. Ask instead:
+
+    prism --explain infill --printer k2
+    prism --explain "z distance"
+    prism --explain seam
+
+You get what it is, what moving it up or down actually does, when to change it,
+what it costs you, and with `--printer`, the value on your machine and what it
+will accept.
+
+And when something has gone wrong, describe it:
+
+    prism --fix "failed at 80%" yourfile.3mf
+    prism --fix stringing
+
+You get the likely causes, most common first, and the settings involved. Where
+Prism can check your file it does, which is the point: a general answer about
+failed prints is a guess, and "object 8 has 151mm2 of overhang and supports are
+OFF" is not. Where it cannot see the cause, it says so rather than guessing.
+Stringing is damp filament, and no setting in your project file will fix it.
 
 ## Settings
 
@@ -164,6 +197,11 @@ designer's guess about someone else's:
 | `support_top_z_distance` | `0.25` | Releases without tearing |
 
 Anything they override is named in the run output. `--keep-source` turns them off.
+
+Settings you arrive at are worth keeping. `--save-prefs` remembers this run's
+choices and every later run applies them, announced rather than silently. An
+explicit flag always beats a saved preference, and one that a given printer
+cannot accept is dropped with a message instead of refusing the job.
 
 Open **Advanced settings** in the window to change these and more. Every setting
 carries an **i** giving the slicer's own name for it and what changing it
@@ -193,8 +231,13 @@ also caps its minimum, since the cooling logic ramps between the two.
     --fan / --aux-fan / --overhang-fan N
     --infill / --infill-density / --walls / --top-layers / --bottom-layers
     --interface-layers / --top-z / --support-style / --seam / --brim
+    --explain SETTING            what a setting does and how to use it
+    --fix SYMPTOM                what causes a problem, checked against your file
+    --colour-preview             what this model's colours become, before converting
     --set KEY=VALUE              any other profile key, repeatable
     --list-settings              what you can change on this printer
+    --save-prefs                 remember this run's settings as your defaults
+    --show-prefs / --no-prefs    list them, or ignore them for one run
     --keep-source                ignore Prism's standing defaults
     --dome off|H                 override the rounded-top layer height
     --out PATH

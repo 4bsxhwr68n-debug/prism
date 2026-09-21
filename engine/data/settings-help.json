@@ -1,0 +1,296 @@
+{
+ "additional_cooling_fan_speed": {
+  "aliases": [
+   "additional cooling fan speed",
+   "additional_cooling_fan_speed",
+   "aux fan",
+   "auxiliary fan",
+   "chamber fan",
+   "side fan"
+  ],
+  "cost": "None in time.",
+  "label": "Auxiliary fan speed",
+  "less": "A warmer chamber, which suits ABS, ASA and warping-prone materials.",
+  "more": "More overall cooling, good for PLA on fast machines.",
+  "use": "Turn it down or off for anything that warps. It is often unnecessarily strong by default.",
+  "what": "A second fan, usually at the side of the chamber, cooling the whole print area."
+ },
+ "bottom_shell_layers": {
+  "aliases": [
+   "bottom",
+   "bottom layers",
+   "bottom shell layers",
+   "bottom solid layers",
+   "bottom_shell_layers"
+  ],
+  "cost": "Same as top layers, and buys less.",
+  "label": "Bottom shell layers",
+  "less": "Faster. The bed already provides a flat face.",
+  "more": "A more rigid base, marginally better on a textured plate.",
+  "use": "3 is plenty for most prints. There is rarely a reason to exceed 4.",
+  "what": "How many solid layers form the base."
+ },
+ "brim_type": {
+  "aliases": [
+   "brim",
+   "brim type",
+   "brim_type"
+  ],
+  "cost": "A few grams and a little cleanup. Far cheaper than a failed print.",
+  "label": "Brim type",
+  "less": "",
+  "more": "",
+  "use": "Use it for tall thin parts, small footprints and anything prone to lifting at the corners. Outer brim only is usually enough. It is the cheapest insurance against a part coming loose.",
+  "what": "A flat skirt printed attached to the first layer to hold the part down."
+ },
+ "brim_width": {
+  "aliases": [
+   "brim size",
+   "brim width",
+   "brim_width"
+  ],
+  "cost": "Material and cleanup time.",
+  "label": "Brim width",
+  "less": "Less grip.",
+  "more": "More grip, more to remove, more chance of it marking the first layer edge.",
+  "use": "3 to 5mm handles most adhesion problems. Wider rarely helps if the first layer itself is the problem.",
+  "what": "How far the brim extends from the part."
+ },
+ "fan_max_speed": {
+  "aliases": [
+   "cooling fan",
+   "fan",
+   "fan max speed",
+   "fan_max_speed",
+   "part cooling"
+  ],
+  "cost": "None in time. It trades surface quality against strength.",
+  "label": "Fan max speed",
+  "less": "Layers bond better, so the part is stronger, especially tall thin ones.",
+  "more": "Plastic sets faster, so overhangs, bridges and small details hold their shape.",
+  "use": "PLA likes plenty of cooling. PETG and ABS want much less, and too much causes warping and weak layer adhesion. On a printer with an unusually strong fan, turning it down often fixes cracking.",
+  "what": "The fan blowing on the part as it prints."
+ },
+ "ironing_type": {
+  "aliases": [
+   "ironing",
+   "ironing type",
+   "ironing_type",
+   "smooth top"
+  ],
+  "cost": "Slow. It can add several minutes per flat surface.",
+  "label": "Ironing",
+  "less": "",
+  "more": "",
+  "use": "Worth it on large flat visible tops, such as lids, plaques and nameplates. Pointless on curved or textured surfaces, and on anything nobody looks at.",
+  "what": "A second, very slow pass over flat top surfaces with almost no extrusion, to melt them smooth."
+ },
+ "layer_height": {
+  "aliases": [
+   "layer",
+   "layer height",
+   "layer_height",
+   "layers",
+   "resolution"
+  ],
+  "cost": "Halving it roughly doubles print time. It does not improve detail in the X and Y directions, only vertically.",
+  "label": "Layer height",
+  "less": "More, thinner layers. Smoother curves, finer detail, proportionally slower.",
+  "more": "Fewer, thicker layers. Much faster, visibly stepped on curves and slopes.",
+  "use": "0.2mm is the sensible default on a 0.4mm nozzle. Drop to 0.12 or 0.16 for curved or detailed models, raise to 0.28 for drafts and bulky parts.",
+  "what": "How thick each printed layer is. The single biggest lever on both quality and time."
+ },
+ "overhang_fan_speed": {
+  "aliases": [
+   "bridge fan",
+   "overhang fan",
+   "overhang fan speed",
+   "overhang_fan_speed"
+  ],
+  "cost": "None in time.",
+  "label": "Overhang fan speed",
+  "less": "Better bonding in those areas, but more sagging.",
+  "more": "Steep overhangs droop less because the plastic freezes sooner.",
+  "use": "Keeping this high while the main fan is lower is a good compromise for PETG: strong layers generally, extra cooling only where gravity is a problem.",
+  "what": "A separate fan speed used only over overhangs and bridges."
+ },
+ "seam_position": {
+  "aliases": [
+   "seam",
+   "seam position",
+   "seam_position",
+   "z seam",
+   "zseam"
+  ],
+  "cost": "None. It is purely about where the blemish goes.",
+  "label": "Seam position",
+  "less": "",
+  "more": "",
+  "use": "Aligned stacks the seam into one straight line, which is tidy and easy to hide or sand. Nearest hides it best on organic shapes. Random scatters it, which is worse on flat faces and better on cylinders. Rear puts it at the back.",
+  "what": "Where on each layer the nozzle starts and stops, which leaves a visible line up the part."
+ },
+ "sparse_infill_density": {
+  "aliases": [
+   "fill",
+   "fill density",
+   "infill",
+   "infill density",
+   "sparse infill density",
+   "sparse_infill_density"
+  ],
+  "cost": "Usually the largest single share of print time after the walls.",
+  "label": "Sparse infill density",
+  "less": "Faster, lighter, less material. Too little and flat tops sag because there is nothing holding them up.",
+  "more": "Stronger and heavier, and slower by a lot. Above about 50 percent the gain per percent is small.",
+  "use": "10 to 15 percent for decorative prints. 25 to 40 for functional parts. Over 50 only for parts under real load, where more walls usually beat more infill.",
+  "what": "How much plastic goes inside the shell, as a percentage of solid."
+ },
+ "sparse_infill_pattern": {
+  "aliases": [
+   "fill pattern",
+   "grid",
+   "gyroid",
+   "infill pattern",
+   "sparse infill pattern",
+   "sparse_infill_pattern"
+  ],
+  "cost": "Prism sets gyroid by default for this reason. Patterns differ in time by 10 to 30 percent for the same density.",
+  "label": "Sparse infill pattern",
+  "less": "",
+  "more": "",
+  "use": "Gyroid is equally strong in every direction and never crosses itself, so the nozzle does not tick over previous passes. Grid is fast but crosses. Lightning is the fastest and only supports the top surface. Cubic and adaptive cubic suit functional parts.",
+  "what": "The shape the internal fill is drawn in."
+ },
+ "support_interface_top_layers": {
+  "aliases": [
+   "interface",
+   "interface layers",
+   "support interface top layers",
+   "support_interface_top_layers"
+  ],
+  "cost": "Small. This is usually the cheapest improvement available to a supported surface.",
+  "label": "Support interface layers",
+  "less": "Less material and easier removal, at the cost of a rougher surface.",
+  "more": "A smoother underside, because the model lands on something solid rather than on sparse lines.",
+  "use": "3 gives a clean underside on most machines. Prism sets this by default.",
+  "what": "Dense layers placed at the very top of a support, directly under the model."
+ },
+ "support_on_build_plate_only": {
+  "aliases": [
+   "build plate only",
+   "plate only",
+   "support on build plate only",
+   "support_on_build_plate_only"
+  ],
+  "cost": "Off can save material and can also ruin a surface you cared about.",
+  "label": "Support on build plate only",
+  "less": "",
+  "more": "",
+  "use": "On is safer: supports resting on the model always mark it, and are the ones that fail partway up. Turn it off only when a feature genuinely overhangs another part of the model.",
+  "what": "Whether supports may stand on the model itself, or only rise from the bed."
+ },
+ "support_style": {
+  "aliases": [
+   "organic support",
+   "support shape",
+   "support style",
+   "support_style",
+   "tree support"
+  ],
+  "cost": "Tree supports usually use less material but can fail on very tall thin branches.",
+  "label": "Support style",
+  "less": "",
+  "more": "",
+  "use": "Tree or organic supports branch up to only the points that need them, touch less surface and peel off more easily, and suit figures and organic shapes. Grid or snug suit flat mechanical overhangs.",
+  "what": "The geometry supports are built from."
+ },
+ "support_threshold_angle": {
+  "aliases": [
+   "overhang angle",
+   "support angle",
+   "support threshold angle",
+   "support_threshold_angle",
+   "threshold"
+  ],
+  "cost": "Set too generously it is the main source of wasted support material.",
+  "label": "Support threshold angle",
+  "less": "Less support, and some overhangs are left to print unaided.",
+  "more": "More of the model qualifies, so more support.",
+  "use": "Most printers manage 45 degrees unaided. Raise the threshold before adding supports everywhere: a well oriented model may need none.",
+  "what": "How steep an overhang has to be before it gets support. Measured from vertical in most slicers."
+ },
+ "support_top_z_distance": {
+  "aliases": [
+   "support gap",
+   "support top z distance",
+   "support_top_z_distance",
+   "top z",
+   "z distance"
+  ],
+  "cost": "The difference between supports that snap off and supports you carve off.",
+  "label": "Support top Z distance",
+  "less": "Better surface, harder to remove, and at zero the support fuses to the part.",
+  "more": "Easier to remove, but the surface above sags into the gap.",
+  "use": "Around 0.2 to 0.25mm on a 0.2mm layer height. Prism sets 0.25 by default, which releases cleanly without tearing.",
+  "what": "The vertical gap left between the top of the support and the model above it."
+ },
+ "support_type": {
+  "aliases": [
+   "support",
+   "support type",
+   "support_type",
+   "supports"
+  ],
+  "cost": "Supports are material and time you throw away, and they mark the surface they touch.",
+  "label": "Support type",
+  "less": "",
+  "more": "",
+  "use": "Normal supports are easier to remove. Tree supports touch less of the model and suit organic shapes. Only where needed keeps them off the model itself.",
+  "what": "Whether and how scaffolding is generated under overhangs."
+ },
+ "top_shell_layers": {
+  "aliases": [
+   "top",
+   "top layers",
+   "top shell layers",
+   "top solid layers",
+   "top_shell_layers"
+  ],
+  "cost": "Each is a full solid layer, among the slowest things a printer does.",
+  "label": "Top shell layers",
+  "less": "Faster, but the top can pillow or show the infill beneath.",
+  "more": "Better chance of a clean top over infill. Slow, because each is a full solid layer.",
+  "use": "4 or 5 on a 0.2mm layer height. If the top looks poor, raising infill often helps more than adding layers.",
+  "what": "How many solid layers close the top of the part."
+ },
+ "wall_generator": {
+  "aliases": [
+   "arachne",
+   "wall generator",
+   "wall mode",
+   "wall_generator"
+  ],
+  "cost": "None meaningful.",
+  "label": "Wall generator",
+  "less": "",
+  "more": "",
+  "use": "Arachne varies wall width to fit thin features, so lettering and thin ribs come out properly instead of being skipped. Classic keeps every wall the same width. Prefer Arachne unless something specific misbehaves.",
+  "what": "The algorithm that decides how perimeters are laid out."
+ },
+ "wall_loops": {
+  "aliases": [
+   "perimeters",
+   "shells",
+   "wall count",
+   "wall loops",
+   "wall_loops",
+   "walls"
+  ],
+  "cost": "Directly proportional. Going from 2 to 4 walls adds roughly the same time again for the shell.",
+  "label": "Wall loops",
+  "less": "Faster and lighter. Too few and the surface shows infill through it.",
+  "more": "Stronger, more watertight, better thread engagement. Every added wall is a full outline on every layer.",
+  "use": "2 for decorative, 3 for general use, 4 or more for parts that carry load. Adding walls strengthens a part more efficiently than adding infill.",
+  "what": "How many perimeter passes form the outside of the part."
+ }
+}
