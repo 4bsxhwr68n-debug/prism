@@ -514,7 +514,11 @@ class Handler(http.server.BaseHTTPRequestHandler):
     def _auth(self):
         from urllib.parse import urlparse, parse_qs
         q = parse_qs(urlparse(self.path).query)
-        return q.get('t', [''])[0] == TOKEN
+        # compare_digest, not ==, because == returns as soon as two bytes
+        # differ. The time it takes therefore reports how much of the token a
+        # guess got right, which is enough to recover it one character at a
+        # time. Raised by ryvin (github.com/ryvin/prism).
+        return secrets.compare_digest(q.get('t', [''])[0].encode(), TOKEN.encode())
 
     def _send(self, body, ctype='application/json'):
         if isinstance(body, str):
