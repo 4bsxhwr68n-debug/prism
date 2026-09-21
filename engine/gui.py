@@ -346,7 +346,9 @@ border-radius:50%;animation:s .7s linear infinite;display:inline-block;vertical-
 <label class="tog"><input type="checkbox" id="fs"><span>Use Full Spectrum: blend four filaments into a wider palette</span></label>
 <div id="fsbody" style="display:none">
 <div class="hint" id="fshint"></div>
-<div id="swwrap"></div></div></div>
+<div id="swwrap"></div>
+<button id="cpbtn" type="button">Show what my colours become</button>
+<pre id="cpout" hidden></pre></div></div>
 
 <div class="card" id="csup"><div class="step"><div class="num">5</div><h2>Supports</h2></div>
 <label class="tog"><input type="checkbox" id="sup"><span>Work out where supports are
@@ -354,6 +356,20 @@ actually needed, and add only those</span></label>
 <p class="hint" id="suphint">Prism measures every overhang in the model: how far it
 reaches, how steep it is and how high it sits. Anything the printer can bridge on its
 own is left alone.</p></div>
+
+<div class="card" id="chelp"><details id="helpd"><summary>Questions</summary>
+<p class="hint">A printer profile carries hundreds of settings and the slicer
+explains almost none of them. Ask about any of them by the name you know it by.</p>
+<label for="exq">What does a setting do?</label>
+<div class="row"><input id="exq" placeholder="infill, z distance, seam, fan"
+ autocomplete="off"><button id="exbtn" type="button">Explain</button></div>
+<pre id="exout" hidden></pre>
+<label for="fxq">Something went wrong</label>
+<div class="row"><input id="fxq" placeholder="failed at 80%, stringing, top looks rough"
+ autocomplete="off"><button id="fxbtn" type="button">Diagnose</button></div>
+<p class="hint">With files chosen above, this checks them rather than guessing.</p>
+<pre id="fxout" hidden></pre>
+</details></div>
 
 <div class="card" id="c5"><details id="adv"><summary>Advanced settings</summary>
 <p class="hint" style="margin-top:4px">Blank uses the value shown. Prism's own
@@ -378,6 +394,42 @@ const T=new URLSearchParams(location.search).get('t');
 const api=(p,b)=>fetch(p+'?t='+T,{method:b?'POST':'GET',headers:{'Content-Type':'application/json'},
   body:b?JSON.stringify(b):null}).then(r=>r.json());
 let S={files:[],printer:null,mode:'balanced',spectrum:false,colour:null,palette:[],spectrumOk:false};
+/* The questions card. Answers come from the engine, so the window and the
+   command line can never drift apart on what a setting means. */
+const ask=(btn,inp,out,ep,after)=>{
+  const B=document.getElementById(btn),I=document.getElementById(inp),O=document.getElementById(out);
+  const run=()=>{
+    const term=(I.value||'').trim(); if(!term)return;
+    O.hidden=false; O.textContent='...';
+    api(ep,{term:term,printer:S.printer,files:S.files})
+      .then(r=>{O.textContent=r.text||'nothing came back'; if(after)after(r.text||'');})
+      .catch(()=>{O.textContent='could not reach the engine';});
+  };
+  B.addEventListener('click',run);
+  I.addEventListener('keydown',e=>{if(e.key==='Enter')run();});
+};
+ask('exbtn','exq','exout','/api/explain');
+ask('fxbtn','fxq','fxout','/api/fix',out=>{
+  /* Setting names in a diagnosis are the next question, so make them the
+     next click rather than something to retype. */
+  const O=document.getElementById('fxout');
+  O.innerHTML=O.textContent.replace(/^(\s{4})([a-z][a-z0-9_]{4,})$/gm,
+    (m,sp,k)=>sp+'<a href="#" data-k="'+k+'">'+k+'</a>');
+  O.querySelectorAll('a[data-k]').forEach(a=>a.addEventListener('click',e=>{
+    e.preventDefault();
+    document.getElementById('exq').value=a.dataset.k;
+    document.getElementById('exbtn').click();
+    document.getElementById('exout').scrollIntoView({block:'nearest'});
+  }));
+});
+document.getElementById('cpbtn').addEventListener('click',()=>{
+  const O=document.getElementById('cpout');
+  O.hidden=false; O.textContent='...';
+  api('/api/colourpreview',{printer:S.printer,files:S.files})
+    .then(r=>{O.textContent=r.text||'nothing came back';})
+    .catch(()=>{O.textContent='could not reach the engine';});
+});
+
 const beat=()=>api('/api/ping').catch(()=>{});
 setInterval(beat,8000);
 /* A hidden tab's timers are throttled and eventually frozen, so beat again the
@@ -587,6 +639,22 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 if body.get('orient'):
                     rargs.append('--orient')
                 rc, out, err = engine(rargs + files)
+                self._send(json.dumps({'text': out or err}))
+            elif path == '/api/explain':
+                args = ['--explain', body.get('term', '')]
+                if body.get('printer'):
+                    args += ['--printer', body['printer']]
+                rc, out, err = engine(args)
+                self._send(json.dumps({'text': out or err}))
+            elif path == '/api/fix':
+                args = ['--fix', body.get('term', '')]
+                if body.get('printer'):
+                    args += ['--printer', body['printer']]
+                rc, out, err = engine(args + files)
+                self._send(json.dumps({'text': out or err}))
+            elif path == '/api/colourpreview':
+                rc, out, err = engine(['--printer', body.get('printer', ''),
+                                       '--colour-preview'] + files)
                 self._send(json.dumps({'text': out or err}))
             elif path == '/api/reveal':
                 reveal(body.get('path', ''))

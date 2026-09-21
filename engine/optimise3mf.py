@@ -1446,7 +1446,7 @@ def diagnose(term, paths, rec):
     elif e.get('grounded') and paths:
         out += ['', '  Nothing in your file points to this one.']
     if e.get('settings'):
-        out += ['', '  Settings involved (use --explain for any of them):']
+        out += ['', '  Settings involved, ask about any of them by name:']
         out += ['    ' + k for k in e['settings']]
     return out
 
