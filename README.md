@@ -220,6 +220,26 @@ It always says what it decided and why:
 This reads the mesh, not the sliced layers, so it is a considered recommendation
 rather than a guarantee. `--supports on` and `--supports off` override it.
 
+### Which way up
+
+`--orient` reports which orientation would need the least support, and by how
+much. **It never rotates anything.**
+
+    object 4 would print better turned:
+      as placed   10958mm2 overhang  152.6mm tall  10424mm2 flat on the plate
+      turned       4861mm2 overhang  132.6mm tall   1596mm2 flat on the plate
+
+It is advice rather than an action on purpose. Least overhang is not the same as
+best printed: turning a model changes which faces come out smooth, which way the
+layers run and therefore where it breaks, and whether a painted model shows its
+detail. None of that is visible in a mesh, and all of it might matter more to you
+than support material.
+
+A candidate is only suggested if it still has a real footprint to sit on and does
+not become much taller, because removing every overhang by standing a flat part
+on its edge is not a favour. Notice the trade in the numbers above: less overhang
+and shorter, but a much smaller base.
+
 ## Command line
 
     python3 engine/optimise3mf.py --list
@@ -233,6 +253,7 @@ rather than a guarantee. `--supports on` and `--supports off` override it.
     --spectrum-colour C         #RRGGBB, a palette id, or a name like Teal
     --spectrum-step MM | off    layer height in painted zones
     --spectrum-biases 25,50,75  blend strengths per pair
+    --orient                    say which way up needs the least support
     --supports auto|on|off      add supports only where the model needs them
     --keep-source               ignore this printer's standing defaults
     --dome off|H                override the rounded-top layer height

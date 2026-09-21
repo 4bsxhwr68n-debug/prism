@@ -225,6 +225,110 @@ def analyse_file(tmp, bed, skip):
             for objid, tris in parse_meshes(tmp).items()}, mesh_bytes
 
 
+ORIENT_SAMPLE = 70000     # faces scored per candidate; plenty for an area sum
+ORIENT_CANDIDATES = 14    # dominant flat faces to try as the new base
+# "Sitting flat" has to mean within a few degrees, not perfectly level, or no
+# organic model ever qualifies and every suggestion is rejected.
+BASE_COS = 0.966          # within 15 degrees of straight down
+ORIENT_MIN_BASE = 80.0    # mm2 of near-flat underside before it can sit stably
+ORIENT_MAX_TALLER = 1.6   # refuse to make a part much taller than it already is
+ORIENT_MIN_GAIN = 300.0   # mm2 saved before it is worth telling anyone
+
+
+def _face_data(tris):
+    """(unit normal, area) per triangle, plus the vertex list. Scoring works on
+    normals alone, so the mesh is walked once and never rotated."""
+    faces, verts = [], []
+    for t in tris:
+        (ax, ay, az), (bx, by, bz), (cx, cy, cz) = t
+        ux, uy, uz = bx-ax, by-ay, bz-az
+        vx, vy, vz = cx-ax, cy-ay, cz-az
+        nx = uy*vz - uz*vy; ny = uz*vx - ux*vz; nz = ux*vy - uy*vx
+        L = math.sqrt(nx*nx + ny*ny + nz*nz)
+        if L == 0:
+            continue
+        faces.append((nx/L, ny/L, nz/L, L/2))
+        verts.extend(t)
+    return faces, verts
+
+
+def _score_up(faces, up, threshold):
+    """Unsupported overhang area and plate-contact area if `up` were up.
+
+    A face's slope from horizontal is the angle between its normal and the
+    down direction, which is a single dot product. No rotation needed."""
+    ux, uy, uz = up
+    lim = math.cos(math.radians(threshold))   # normal-to-down cosine at the limit
+    over = flat = 0.0
+    for nx, ny, nz, a in faces:
+        d = -(nx*ux + ny*uy + nz*uz)          # 1.0 = pointing straight down
+        if d > lim:
+            over += a
+        if d > BASE_COS:
+            flat += a          # near-down: what can plausibly rest on the plate
+    return over, flat
+
+
+def _extent(verts, up):
+    ux, uy, uz = up
+    lo = hi = None
+    for (x, y, z) in verts:
+        d = x*ux + y*uy + z*uz
+        if lo is None or d < lo: lo = d
+        if hi is None or d > hi: hi = d
+    return (hi - lo) if lo is not None else 0.0
+
+
+def suggest_orientation(tris, bed, threshold=30.0):
+    """Which way up leaves the least that has to be held up.
+
+    Only a suggestion: it never rotates anything. The best orientation for
+    supports is often the worst for surface finish, for strength across the
+    layer lines, or for a painted model whose detail should face upward, and
+    none of that is visible from the mesh."""
+    faces, verts = _face_data(tris)
+    if not faces:
+        return None
+    faces.sort(key=lambda f: -f[3])
+    sample = faces[:ORIENT_SAMPLE]
+
+    cands = [(0, 0, 1), (0, 0, -1), (1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0)]
+    seen = [c for c in cands]
+    for nx, ny, nz, _ in faces[:400]:          # dominant flats make good bases
+        u = (-nx, -ny, -nz)
+        if all(u[0]*v[0] + u[1]*v[1] + u[2]*v[2] < 0.985 for v in seen):
+            seen.append(u); cands.append(u)
+        if len(cands) >= ORIENT_CANDIDATES:
+            break
+
+    total = sum(f[3] for f in sample)
+    results = []
+    for u in cands:
+        over, flat = _score_up(sample, u, threshold)
+        h = _extent(verts, u)
+        results.append({'up': u, 'over': over, 'flat': flat, 'height': h,
+                        'fits': h <= bed[2], 'frac': (over/total if total else 0)})
+    cur = results[0]
+
+    # Least overhang is not the same as best printed. Standing a flat part on
+    # its edge removes every overhang and gives you a fragile tower on a
+    # postage stamp, so a candidate has to earn its place: a real footprint to
+    # sit on, and no wild increase in height.
+    widest = max((r['flat'] for r in results), default=0.0)
+    ok = [r for r in results
+          if r['fits']
+          and r['flat'] >= max(ORIENT_MIN_BASE, widest * 0.15)
+          and r['height'] <= cur['height'] * ORIENT_MAX_TALLER]
+    if not ok:
+        return {'current': cur, 'best': cur, 'gain': 0.0, 'changed': False,
+                'reason': 'nothing else gives it a stable enough base to sit on'}
+    best = min(ok, key=lambda r: (r['over'], -r['flat'], r['height']))
+    gain = cur['over'] - best['over']
+    worth = best['up'] != cur['up'] and gain > ORIENT_MIN_GAIN and gain > cur['over'] * 0.25
+    return {'current': cur, 'best': best, 'gain': gain, 'changed': worth,
+            'reason': None}
+
+
 def plan_supports(metrics, want):
     """Decide whether this model needs supports, and keep them to a minimum.
 
@@ -1146,7 +1250,7 @@ def inject_object_layer_height(xml_text, objid, value):
 
 def convert(src_path, rec, key, mode, single, dome_override, skip_analyse,
             out_path=None, spectrum=None, keep_source=False, overrides=None,
-            supports=None):
+            supports=None, orient=False):
     stem = re.sub(r'\.3mf$', '', os.path.basename(src_path), flags=re.I)
     suffix = key.upper() + ('-FS' if spectrum else '')
     out_path = out_path or os.path.join(os.path.dirname(src_path),
@@ -1179,6 +1283,28 @@ def convert(src_path, rec, key, mode, single, dome_override, skip_analyse,
             plan['dome_lh'] = None
         elif dome_override:
             plan['dome_lh'] = dome_override
+
+        if orient and mesh_bytes <= ANALYSE_BUDGET_BYTES:
+            for oid, tris in parse_meshes(tmp).items():
+                r = suggest_orientation(tris, rec['bed'])
+                if not r:
+                    continue
+                c, b = r['current'], r['best']
+                if r['changed']:
+                    report.append('object %s would print better turned:' % oid)
+                    report.append('  as placed  %6.0fmm2 overhang  %5.1fmm tall  '
+                                  '%5.0fmm2 flat on the plate'
+                                  % (c['over'], c['height'], c['flat']))
+                    report.append('  turned     %6.0fmm2 overhang  %5.1fmm tall  '
+                                  '%5.0fmm2 flat on the plate'
+                                  % (b['over'], b['height'], b['flat']))
+                else:
+                    report.append('object %s: %s' % (oid, r.get('reason') or
+                                  'as placed is already the sensible way up'))
+            if any('turned' in x for x in report):
+                report.append('  Prism does not rotate anything. Turning a model '
+                              'changes which faces come out smooth and which way '
+                              'the layers run, and the mesh cannot tell you that.')
 
         sup_cfg, sup_why = ({}, [])
         if supports:
@@ -1361,6 +1487,9 @@ def main():
                     help='set any profile key directly; repeatable')
     ap.add_argument('--list-settings', action='store_true',
                     help='print the settings you can change, then exit')
+    ap.add_argument('--orient', action='store_true',
+                    help='say which way up would need the least support; '
+                         'it never rotates anything')
     ap.add_argument('--supports', choices=['auto', 'on', 'off'], default=None,
                     help='look at the model and add supports only where they are '
                          'actually needed')
@@ -1521,7 +1650,7 @@ def main():
     for f in a.files:
         convert(os.path.abspath(f), rec, key, mode, single, a.dome,
                 a.no_analyse, a.out, spectrum, a.keep_source, overrides,
-                a.supports)
+                a.supports, a.orient)
 
 
 if __name__ == '__main__':
