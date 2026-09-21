@@ -45,6 +45,12 @@ META_SKIP = {'name', 'inherits', 'from', 'instantiation', 'setting_id',
              'compatible_prints_condition', 'version', 'is_custom_defined'}
 ANALYSE_BUDGET_BYTES = 60_000_000
 
+# The slicer's own max_bridge_length on these machines is 10mm, so a ceiling
+# narrower than that is expected to bridge rather than need holding up.
+BRIDGE_LIMIT = 10.0
+BRIDGE_BAND = 0.5        # group ceilings into Z bands this tall before measuring
+SUPPORT_MIN_AREA = 40.0  # mm2 of unbridgeable ceiling before supports earn their place
+
 MODES = {  # global layer height, dome-object layer height
     'speed':    {'lh': 0.28, 'dome': 0.16, 'time': '~0.7x'},
     'balanced': {'lh': 0.20, 'dome': 0.12, 'time': '1x'},
@@ -141,6 +147,9 @@ def analyse_object(tris, bed):
     zmin = min(zs)
     dims = (max(xs) - min(xs), max(ys) - min(ys), max(zs) - zmin)
     oversize = dims[0] > bed[0] or dims[1] > bed[1] or dims[2] > bed[2]
+    ceiling = steep = moderate = 0.0   # downward area by slope from horizontal
+    ceil_bands = {}                    # z band -> [minx,maxx,miny,maxy,area]
+    over_z_lo, over_z_hi = 1e9, -1e9
     down_flat = 0.0          # unsupported near-flat ceilings (needs supports?)
     up_shallow = 0.0         # 3-30 deg from horizontal: stair-ring zone
     up_flat = 0.0            # <=3 deg true flat tops (ironing candidates)
@@ -162,12 +171,48 @@ def analyse_object(tris, bed):
             elif 3.0 < ang < 30.0 and lowz > zmin + 1.0:
                 up_shallow += area
             continue
+        # Downward face. `ang` is the surface's slope from horizontal, the same
+        # convention the slicer's support_threshold_angle uses: 0 is a flat
+        # ceiling, 90 is a vertical wall.
         ang = math.degrees(math.acos(min(1.0, -nzn)))
-        if min(p[2] for p in t) <= zmin + 0.25: continue
+        lz = min(p[2] for p in t)
+        if lz <= zmin + 0.25: continue          # sitting on the plate
         if ang < 20: down_flat += area
+        if ang < 10:
+            ceiling += area
+            band = round(lz / BRIDGE_BAND) * BRIDGE_BAND
+            bx = ceil_bands.setdefault(band, [1e9, -1e9, 1e9, -1e9, 0.0])
+            for (px, py, _) in t:
+                bx[0] = min(bx[0], px); bx[1] = max(bx[1], px)
+                bx[2] = min(bx[2], py); bx[3] = max(bx[3], py)
+            bx[4] += area
+        elif ang < 30:
+            steep += area
+        elif ang < 55:
+            moderate += area
+        if ang < 30:
+            over_z_hi = max(over_z_hi, max(p[2] for p in t))
+            over_z_lo = min(over_z_lo, lz)
+
+    # Span each ceiling has to cross. Grouped into thin Z bands and measured as
+    # the SHORTER side of the band's bounding box, because a long thin ledge
+    # bridges across its narrow dimension. This is an estimate from the mesh,
+    # not the slicer's own per-layer bridge detection.
+    spans = sorted((min(b[1] - b[0], b[3] - b[2]), b[4])
+                   for b in ceil_bands.values() if b[4] > 1.0)
+    max_span = max((sp for sp, _ in spans), default=0.0)
+    bridgeable = sum(a for sp, a in spans if sp <= BRIDGE_LIMIT)
+    needs_span = sum(a for sp, a in spans if sp > BRIDGE_LIMIT)
+
     dome = up_shallow > 500 and up_total > 0 and up_shallow / up_total > 0.10
     return {'dims': dims, 'oversize': oversize, 'down_flat': down_flat,
-            'up_shallow': up_shallow, 'up_flat': up_flat, 'dome': dome}
+            'up_shallow': up_shallow, 'up_flat': up_flat, 'dome': dome,
+            'ceiling': ceiling, 'steep': steep, 'moderate': moderate,
+            'max_span': max_span, 'bridgeable': bridgeable,
+            'needs_span': needs_span,
+            'over_z_lo': (0.0 if over_z_lo > 1e8 else over_z_lo - zmin),
+            'over_z_hi': (0.0 if over_z_hi < -1e8 else over_z_hi - zmin),
+            'height': dims[2]}
 
 
 def analyse_file(tmp, bed, skip):
@@ -178,6 +223,65 @@ def analyse_file(tmp, bed, skip):
         return None, mesh_bytes
     return {objid: analyse_object(tris, bed)
             for objid, tris in parse_meshes(tmp).items()}, mesh_bytes
+
+
+def plan_supports(metrics, want):
+    """Decide whether this model needs supports, and keep them to a minimum.
+
+    The principle is that a support you did not need costs material, time and a
+    scarred surface, so nothing is added without a reason that can be stated.
+
+    What it can see: every downward-facing surface, its slope, how high it sits,
+    and how far each ceiling has to reach. What it cannot see is the slicer's
+    own per-layer view, so a ceiling narrower than the machine's bridge limit is
+    trusted to bridge rather than proven to.
+    """
+    if want == 'off':
+        return {'enable_support': '0'}, ['supports off (you asked)']
+    if not metrics:
+        return {}, ['supports left alone (the mesh was not analysed)']
+
+    ceiling = sum(m['ceiling'] for m in metrics.values())
+    steep = sum(m['steep'] for m in metrics.values())
+    unbridgeable = sum(m['needs_span'] for m in metrics.values())
+    bridgeable = sum(m['bridgeable'] for m in metrics.values())
+    span = max((m['max_span'] for m in metrics.values()), default=0.0)
+    hi = max((m['over_z_hi'] for m in metrics.values()), default=0.0)
+    height = max((m['height'] for m in metrics.values()), default=0.0)
+
+    why = []
+    needed = want == 'on' or unbridgeable > SUPPORT_MIN_AREA or steep > 300
+
+    if not needed:
+        if ceiling > 0:
+            why.append('no supports: %.0fmm2 of ceiling, widest reach %.0fmm, '
+                       'all within the %.0fmm the printer bridges'
+                       % (ceiling, span, BRIDGE_LIMIT))
+        else:
+            why.append('no supports: nothing overhangs far enough to need them')
+        return {'enable_support': '0'}, why
+
+    out = {'enable_support': '1'}
+    if want == 'on' and unbridgeable <= SUPPORT_MIN_AREA:
+        why.append('supports on (you asked) though the geometry looks self-supporting')
+    else:
+        why.append('supports on: %.0fmm2 reaches further than the %.0fmm bridge '
+                   'limit, widest span %.0fmm' % (unbridgeable, BRIDGE_LIMIT, span))
+    if bridgeable > 1:
+        why.append('  %.0fmm2 of shorter ceiling left to bridge on its own'
+                   % bridgeable)
+
+    # Only what has to be held up. This is the slicer's own minimum-supports
+    # switch and it is the whole point of the exercise.
+    out['support_critical_regions_only'] = '1'
+    why.append('  limited to critical regions, so nothing is propped up needlessly')
+
+    # Nothing overhangs high up, so supports never need to stand on the model.
+    if height > 1 and hi <= height * 0.55:
+        out['support_on_build_plate_only'] = '1'
+        why.append('  from the build plate only: the highest overhang is %.0fmm '
+                   'of %.0fmm' % (hi, height))
+    return out, why
 
 
 def plan_modes(metrics, src_lh, enums):
@@ -870,7 +974,7 @@ def apply_spectrum(out, rec, n, spectrum, plan, notes):
 
 
 def build_project_settings(src, rec, single, plan, notes, spectrum=None,
-                           keep_source=False, overrides=None):
+                           keep_source=False, overrides=None, supports=None):
     tpl = rec['template']
     out = dict(tpl)
     fil_table = rec['filaments']
@@ -947,6 +1051,7 @@ def build_project_settings(src, rec, single, plan, notes, spectrum=None,
     # override is named, so nothing changes silently. --keep-source turns them
     # off and leaves the source and vendor profile to decide.
     wanted = {} if keep_source else dict(rec.get('defaults') or {})
+    wanted.update(supports or {})       # measured from this model's own geometry
     chosen = set(overrides or ())
     wanted.update(overrides or {})      # an explicit choice always wins
     applied = []
@@ -1040,7 +1145,8 @@ def inject_object_layer_height(xml_text, objid, value):
 
 
 def convert(src_path, rec, key, mode, single, dome_override, skip_analyse,
-            out_path=None, spectrum=None, keep_source=False, overrides=None):
+            out_path=None, spectrum=None, keep_source=False, overrides=None,
+            supports=None):
     stem = re.sub(r'\.3mf$', '', os.path.basename(src_path), flags=re.I)
     suffix = key.upper() + ('-FS' if spectrum else '')
     out_path = out_path or os.path.join(os.path.dirname(src_path),
@@ -1074,9 +1180,13 @@ def convert(src_path, rec, key, mode, single, dome_override, skip_analyse,
         elif dome_override:
             plan['dome_lh'] = dome_override
 
+        sup_cfg, sup_why = ({}, [])
+        if supports:
+            sup_cfg, sup_why = plan_supports(metrics, supports)
+            report.extend(sup_why)
         new_cfg, nslots = build_project_settings(src_cfg, rec, single, plan,
                                                  notes, spectrum, keep_source,
-                                                 overrides)
+                                                 overrides, sup_cfg)
         os.makedirs(os.path.dirname(sp), exist_ok=True)
         json.dump(new_cfg, open(sp, 'w', encoding='utf-8', newline='\n'), indent=4)
 
@@ -1251,6 +1361,9 @@ def main():
                     help='set any profile key directly; repeatable')
     ap.add_argument('--list-settings', action='store_true',
                     help='print the settings you can change, then exit')
+    ap.add_argument('--supports', choices=['auto', 'on', 'off'], default=None,
+                    help='look at the model and add supports only where they are '
+                         'actually needed')
     ap.add_argument('--keep-source', action='store_true',
                     help="skip this printer's standing defaults and keep the "
                          "source and vendor values")
@@ -1407,7 +1520,8 @@ def main():
         ap.error('--out only valid with a single input file')
     for f in a.files:
         convert(os.path.abspath(f), rec, key, mode, single, a.dome,
-                a.no_analyse, a.out, spectrum, a.keep_source, overrides)
+                a.no_analyse, a.out, spectrum, a.keep_source, overrides,
+                a.supports)
 
 
 if __name__ == '__main__':

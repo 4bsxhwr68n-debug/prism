@@ -135,16 +135,54 @@ def palette(key):
     return rows
 
 
-QUICK = [('sparse_infill_pattern', 'Infill pattern', 'enum'),
-         ('sparse_infill_density', 'Infill density', 'pct'),
-         ('wall_loops', 'Walls', 'int'),
-         ('top_shell_layers', 'Top layers', 'int'),
-         ('bottom_shell_layers', 'Bottom layers', 'int'),
-         ('support_interface_top_layers', 'Support interface layers', 'int'),
-         ('support_top_z_distance', 'Support top gap (mm)', 'num'),
-         ('support_style', 'Support style', 'enum'),
-         ('seam_position', 'Seam position', 'enum'),
-         ('ironing_type', 'Ironing', 'enum')]
+# key, label, kind, the slicer's own name for it, and what it actually does.
+# The last field is the point: most people meet these settings without ever
+# being told what they change, so the panel explains rather than just exposes.
+QUICK = [
+ ('sparse_infill_pattern', 'Infill pattern', 'enum', 'Sparse infill pattern',
+  'The lattice inside the part. Gyroid is equally strong in every direction and '
+  'never crosses itself, so it prints cleanly and quietly. Grid is quicker but '
+  'weaker across layers and can rattle where the lines cross.'),
+ ('sparse_infill_density', 'Infill density', 'pct', 'Sparse infill density',
+  'How much of the inside is filled. 15% is plenty for something you look at. '
+  'Past roughly 40% you gain weight and print time faster than you gain '
+  'strength, and extra walls would serve you better.'),
+ ('wall_loops', 'Walls', 'int', 'Wall loops',
+  'How many perimeters make the skin. Adding a wall buys far more strength than '
+  'adding infill, for less time. Two is normal, three for anything load bearing.'),
+ ('top_shell_layers', 'Top layers', 'int', 'Top shell layers',
+  'Solid layers closing the top. Too few and the infill shows through as '
+  'pinholes or a quilted texture. Five is a safe default at 0.2mm.'),
+ ('bottom_shell_layers', 'Bottom layers', 'int', 'Bottom shell layers',
+  'Solid layers on the underside. Mostly cosmetic unless the part is thin, '
+  'where too few makes it flex.'),
+ ('enable_support', 'Supports', 'bool', 'Enable support',
+  'Whether anything is printed to hold up overhangs. Prism can work this out '
+  'from the model itself, adding them only where the geometry cannot hold '
+  'itself up.'),
+ ('support_threshold_angle', 'Support threshold', 'int', 'Support threshold angle',
+  'Overhangs shallower than this angle get supported. Lower means fewer '
+  'supports and more trust in the printer to bridge. 30 degrees is the usual '
+  'setting; a well tuned machine often manages 40.'),
+ ('support_interface_top_layers', 'Support interface layers', 'int',
+  'Top interface layers',
+  'The dense raft between the support and the part above it. More layers give a '
+  'cleaner surface underneath, but make the support harder to snap off.'),
+ ('support_top_z_distance', 'Support top gap (mm)', 'num', 'Top Z distance',
+  'The air gap between the support and the part it holds up. Larger releases '
+  'more easily and leaves a rougher face; smaller leaves a better face and can '
+  'fuse. Best kept to a multiple of your layer height.'),
+ ('support_style', 'Support style', 'enum', 'Support style',
+  'Tree supports use less material and touch the model in fewer places, which '
+  'is kinder to the surface. Grid is more reliable under a large flat ceiling.'),
+ ('seam_position', 'Seam position', 'enum', 'Seam position',
+  'Where each layer starts and stops, visible as a faint line up the side. '
+  'Aligned stacks them into one tidy seam you can hide; random scatters them so '
+  'none of them stands out.'),
+ ('ironing_type', 'Ironing', 'enum', 'Ironing type',
+  'Runs the hot nozzle back over flat top surfaces to smooth them. It costs '
+  'real time, so it earns its place on large flat tops and nowhere else.'),
+]
 
 
 def settings_for(key):
@@ -159,12 +197,13 @@ def settings_for(key):
         d = json.load(fh)
     tpl, enums, defaults = d['template'], d.get('enums', {}), d.get('defaults', {})
     rows = []
-    for k, label, kind in QUICK:
+    for k, label, kind, slicer_name, helptext in QUICK:
         if k not in tpl:
             continue
         cur = tpl[k]
         cur = cur[0] if isinstance(cur, list) and cur else cur
         rows.append({'key': k, 'label': label, 'kind': kind,
+                     'slicer': slicer_name, 'help': helptext,
                      'effective': defaults.get(k, cur),
                      'prism': defaults.get(k),
                      'options': sorted(enums.get(k, []))})
@@ -232,6 +271,16 @@ white-space:pre-wrap;word-break:break-word}
  border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink);width:100%}
 textarea{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px;resize:vertical}
 .mark{color:var(--accent);font-weight:600}
+.i{display:inline-grid;place-items:center;width:15px;height:15px;border-radius:50%;
+ border:1px solid var(--line);color:var(--dim);font-size:10px;font-weight:700;
+ cursor:pointer;margin-left:5px;vertical-align:1px;background:var(--card);
+ font-family:Georgia,serif;font-style:italic;line-height:1}
+.i:hover{border-color:var(--accent);color:var(--accent)}
+.hlp{display:none;font-size:12px;line-height:1.5;color:var(--dim);
+ background:var(--bg);border:1px solid var(--line);border-left:3px solid var(--accent);
+ border-radius:0 8px 8px 0;padding:9px 11px;margin-top:6px}
+.hlp.on{display:block}
+.hlp b{color:var(--ink);font-weight:600}
 summary{cursor:pointer;font-size:14px;font-weight:600;list-style:none}
 summary::-webkit-details-marker{display:none}
 summary::before{content:"▸ ";color:var(--dim)}
@@ -263,9 +312,19 @@ border-radius:50%;animation:s .7s linear infinite;display:inline-block;vertical-
 <div class="hint" id="fshint"></div>
 <div id="swwrap"></div></div></div>
 
+<div class="card" id="csup"><div class="step"><div class="num">5</div><h2>Supports</h2></div>
+<label class="tog"><input type="checkbox" id="sup"><span>Work out where supports are
+actually needed, and add only those</span></label>
+<p class="hint" id="suphint">Prism measures every overhang in the model: how far it
+reaches, how steep it is and how high it sits. Anything the printer can bridge on its
+own is left alone.</p></div>
+
 <div class="card" id="c5"><details id="adv"><summary>Advanced settings</summary>
 <p class="hint" style="margin-top:4px">Blank uses the value shown. Prism's own
-choices are marked; clearing one back to blank restores it.</p>
+choices are marked; clearing one back to blank restores it. Every setting has an
+<span class="i" style="cursor:default">i</span> explaining what it changes in the
+slicer and why it matters.</p>
+<button id="explain" style="margin-top:2px">Explain every setting</button>
 <div class="grid" id="advgrid"></div>
 <label class="lbl" for="extra" style="margin-top:14px">Anything else, one
 <code>key=value</code> per line</label>
@@ -308,13 +367,16 @@ api('/api/printers').then(r=>{const s=document.getElementById('printer');
 
 function loadSettings(){if(!S.printer)return;
  api('/api/settings',{printer:S.printer}).then(r=>{
-  document.getElementById('advgrid').innerHTML=r.rows.map(f=>{
+  document.getElementById('advgrid').innerHTML=r.rows.map((f,i)=>{
    const mark=f.prism?' <span class="mark">Prism</span>':'';
    const ctl=f.kind==='enum'&&f.options.length
     ? `<select data-k="${f.key}"><option value="">${f.effective}</option>`+
       f.options.map(o=>`<option value="${o}">${o}</option>`).join('')+`</select>`
     : `<input data-k="${f.key}" placeholder="${f.effective}">`;
-   return `<div class="fld"><label class="lbl">${f.label}${mark}</label>${ctl}</div>`;
+   return `<div class="fld"><label class="lbl">${f.label}${mark}`+
+    `<span class="i" data-h="h${i}" title="What does this do?">i</span></label>`+
+    `${ctl}<div class="hlp" id="h${i}">`+
+    `<b>In the slicer: ${f.slicer}</b><br>${f.help}</div></div>`;
   }).join('');});}
 
 function collectSets(){const out=[];
@@ -331,6 +393,13 @@ function loadPalette(){api('/api/palette',{printer:S.printer}).then(r=>{S.palett
   `<div class="sw" style="margin-top:11px"><button class="chip sel" data-c=""><div class="dot" style="background:linear-gradient(135deg,#08ABFB,#F9ED3D 50%,#D93B90)"></div>Map automatically</button></div>`+
   `<div class="swhead">Loaded filaments</div><div class="sw">${solids.map(chip).join('')}</div>`+
   `<div class="swhead">Blends</div><div class="sw">${blends.map(chip).join('')}</div>`;});}
+document.getElementById('advgrid').onclick=e=>{const b=e.target.closest('.i');
+ if(!b)return; const h=document.getElementById(b.dataset.h);
+ if(h) h.classList.toggle('on');};
+document.getElementById('explain').onclick=()=>{
+ const any=[...document.querySelectorAll('#advgrid .hlp')].some(x=>!x.classList.contains('on'));
+ document.querySelectorAll('#advgrid .hlp').forEach(x=>x.classList.toggle('on',any));
+ document.getElementById('explain').textContent=any?'Hide explanations':'Explain every setting';};
 document.getElementById('swwrap').onclick=e=>{const b=e.target.closest('.chip');if(!b)return;
  S.colour=b.dataset.c||null;[...document.querySelectorAll('.chip')].forEach(x=>x.classList.toggle('sel',x===b));};
 
@@ -362,7 +431,8 @@ document.getElementById('go').onclick=()=>{const g=document.getElementById('go')
  g.disabled=true;document.getElementById('gohint').innerHTML='<span class="spin"></span> converting…';
  document.getElementById('out').textContent='';
  api('/api/convert',{files:S.files,printer:S.printer,mode:S.mode,
-   spectrum:S.spectrum,colour:S.colour,sets:collectSets()}).then(r=>{
+   spectrum:S.spectrum,colour:S.colour,sets:collectSets(),
+   supports:document.getElementById('sup').checked?'auto':null}).then(r=>{
   document.getElementById('gohint').textContent='';
   const o=document.getElementById('out');o.innerHTML='';
   const h=document.createElement('div');
@@ -462,6 +532,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     args.append('--spectrum')
                     if body.get('colour'):
                         args += ['--spectrum-colour', str(body['colour'])]
+                if body.get('supports'):
+                    args += ['--supports', str(body['supports'])]
                 for item in (body.get('sets') or []):
                     if '=' in str(item):
                         args += ['--set', str(item)]

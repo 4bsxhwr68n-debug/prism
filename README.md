@@ -132,6 +132,10 @@ source and vendor profile to decide.
 Open **Advanced settings** in the window, or use the flags. Anything you set
 beats both the source and Prism's defaults, and the run output says so.
 
+Every setting carries an **i** explaining what it is called in the slicer and
+what changing it actually does, because most people meet these settings without
+ever being told. "Explain every setting" opens all of them at once.
+
 ![Advanced settings](docs/advanced.png)
 
     --infill gyroid              --walls 3
@@ -169,16 +173,52 @@ filaments until the eye reads them as one colour. Prism sets that up:
 - Halves the layer height so a full colour cycle fits inside one nominal layer.
   Without that, flat faces print one filament neat and band visibly.
 
-**[How colour and painting work](docs/COLOUR.md)** covers this properly: whether
-you can paint manually, how to choose colours, and what the printer can actually
-produce. The short version is that Prism generates the mapping for you, and if
-you want specific areas in specific colours you paint in your slicer first and
-let Prism translate.
+### Read this before planning a colour scheme
 
-Honest edges: the gamut has no dark end, so a near-black target gets the closest
-available colour and the run says so. Blending roughly doubles print time and
-the prime tower uses about 0.11g per tool change. Use the real semi-translucent
-filaments; opaque ones stripe on shallow slopes.
+**The gamut is bright and narrow.** Cyan, magenta, yellow and grey, with no white
+and no black, cannot reach dark, muted or pale colours. This is not a rounding
+error at the edges. A deep green comes back as bright teal, a brown as orange, an
+off-white as mid grey.
+
+![What you ask for, and what you get](docs/colour-gamut.png)
+
+Those are real matches from the tool. Prism always says when a match is a
+compromise rather than printing it quietly, but it is far better to know before
+you start. Run `--spectrum-list`, or open the colour picker in the window, and
+design around what the printer can actually make.
+
+**[How colour and painting work](docs/COLOUR.md)** covers the rest: whether you
+can paint manually, how to choose colours, and the full palette. The short
+version is that Prism generates the mapping for you, and if you want specific
+areas in specific colours you paint in your slicer first and let Prism translate.
+
+Other honest edges: blending roughly doubles print time and the prime tower uses
+about 0.11g per tool change. Use the real semi-translucent filaments; opaque ones
+stripe on shallow slopes.
+
+## Supports, worked out from the model
+
+`--supports auto`, or the tick box in the window, measures every downward-facing
+surface in the model: how steep it is, how high it sits, and how far each ceiling
+has to reach. Supports go only where the geometry genuinely cannot hold itself
+up, because a support you did not need costs material, time and a scarred
+surface.
+
+Anything narrower than the machine's own bridge limit is trusted to bridge. What
+is left gets supports limited to critical regions, and restricted to the build
+plate when nothing overhangs high enough to need standing on the model.
+
+It always says what it decided and why:
+
+    supports on: 997mm2 reaches further than the 10mm bridge limit, widest span 36mm
+      2mm2 of shorter ceiling left to bridge on its own
+      limited to critical regions, so nothing is propped up needlessly
+
+    no supports: 340mm2 of ceiling, widest reach 7mm, all within the 10mm the
+    printer bridges
+
+This reads the mesh, not the sliced layers, so it is a considered recommendation
+rather than a guarantee. `--supports on` and `--supports off` override it.
 
 ## Command line
 
@@ -193,6 +233,7 @@ filaments; opaque ones stripe on shallow slopes.
     --spectrum-colour C         #RRGGBB, a palette id, or a name like Teal
     --spectrum-step MM | off    layer height in painted zones
     --spectrum-biases 25,50,75  blend strengths per pair
+    --supports auto|on|off      add supports only where the model needs them
     --keep-source               ignore this printer's standing defaults
     --dome off|H                override the rounded-top layer height
     --out PATH                  explicit output path
