@@ -2062,8 +2062,13 @@ def convert(src_path, rec, key, mode, single, dome_override, skip_analyse,
             # paint_color is segmentation, not geometry. Compare with it
             # stripped from BOTH sides: vertices and triangle indices must still
             # match byte for byte, so the mesh guarantee is unchanged.
+            # Directory entries are in namelist() but hold nothing, and the
+            # writer does not reproduce them, so reading one back from the
+            # output raises. A zip that stores `3D/` as an entry is perfectly
+            # valid and several real files do.
             geo0 = {n: hashlib.sha256(strip_paint(z0.read(n))).hexdigest()
-                    for n in z0.namelist() if n.startswith('3D/')
+                    for n in z0.namelist()
+                    if n.startswith('3D/') and not n.endswith('/')
                     and not (rec.get('app_stamp') and n == '3D/3dmodel.model')}
             geo1 = {n: hashlib.sha256(strip_paint(z1.read(n))).hexdigest()
                     for n in geo0}
@@ -2072,10 +2077,18 @@ def convert(src_path, rec, key, mode, single, dome_override, skip_analyse,
             if 'Metadata/model_settings.config' in z0.namelist():
                 s0 = z0.read('Metadata/model_settings.config').decode('utf-8')
                 s1 = z1.read('Metadata/model_settings.config').decode('utf-8')
-                ET.fromstring(s1)
-                for tag in ('<object ', '<plate', '<model_instance'):
-                    assert s0.count(tag) == s1.count(tag), \
-                        f'model_settings lost {tag} entries, aborting'
+                # Some files ship an EMPTY model_settings.config. There is then
+                # nothing to preserve and nothing to check, and refusing the
+                # job over it would be refusing a convertible file. Say so and
+                # carry on; the geometry check above still applies.
+                if not s0.strip():
+                    notes.append('the source has an empty model_settings.config, '
+                                 'so it carries no per-object settings to keep')
+                else:
+                    ET.fromstring(s1)
+                    for tag in ('<object ', '<plate', '<model_instance'):
+                        assert s0.count(tag) == s1.count(tag), \
+                            f'model_settings lost {tag} entries, aborting'
 
         print(f"OK -> {out_path}")
         print(f"open in: {slicer_for(rec)}")
