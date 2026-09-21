@@ -82,32 +82,61 @@ def norm_type(t):
 
 # ------------------------- geometry analysis ---------------------------
 
+IDENTITY = '1 0 0 0 1 0 0 0 1 0 0 0'
+
+
+def plate_items(src):
+    """(objectid, transform) for every item on the plate.
+
+    Parsed per tag rather than with one regex over the pair, because BOTH of
+    those assumptions were wrong: `transform` is optional in 3MF and defaults
+    to identity, and attributes may appear in any order. A file written as
+    `<item objectid="8" printable="1"/>` was skipped entirely, so the mesh was
+    never analysed and the report said "clean geometry" having looked at
+    nothing."""
+    out = []
+    for tag in re.findall(r'<item\b[^>]*?/?>', src):
+        oid = re.search(r'\bobjectid="([^"]+)"', tag)
+        if not oid:
+            continue
+        tr = re.search(r'\btransform="([^"]+)"', tag)
+        out.append((oid.group(1), tr.group(1) if tr else IDENTITY))
+    return out
+
+
+def _parse_model(path):
+    """Objects as (vertices, triangle index triples) plus their components.
+
+    Indices, not coordinates: edge topology needs to know which vertices are
+    the SAME vertex, and comparing floats cannot tell a shared vertex from two
+    that happen to coincide."""
+    objs, comps = {}, {}
+    cur, V, T = None, None, None
+    for ev, el in ET.iterparse(path, events=('start', 'end')):
+        tag = el.tag.split('}')[-1]
+        if ev == 'start' and tag == 'object':
+            cur = el.get('id'); V, T = [], []; comps.setdefault(cur, [])
+        elif ev == 'end':
+            if tag == 'vertex' and cur is not None:
+                V.append((float(el.get('x')), float(el.get('y')), float(el.get('z'))))
+            elif tag == 'triangle' and cur is not None:
+                T.append((int(el.get('v1')), int(el.get('v2')), int(el.get('v3'))))
+            elif tag == 'component' and cur is not None:
+                p = [v for k, v in el.attrib.items() if k.endswith('path')]
+                comps[cur].append((p[0] if p else None, el.get('objectid'),
+                                   el.get('transform') or '1 0 0 0 1 0 0 0 1 0 0 0'))
+            elif tag == 'object':
+                objs[cur] = (V, T); cur = None; el.clear()
+            elif tag in ('vertex', 'triangle'):
+                el.clear()
+    return objs, comps
+
+
 def parse_meshes(tmp):
     root_path = os.path.join(tmp, '3D', '3dmodel.model')
     if not os.path.exists(root_path):
         return {}
-
-    def parse(path):
-        objs, comps = {}, {}
-        cur, V, T = None, None, None
-        for ev, el in ET.iterparse(path, events=('start', 'end')):
-            tag = el.tag.split('}')[-1]
-            if ev == 'start' and tag == 'object':
-                cur = el.get('id'); V, T = [], []; comps.setdefault(cur, [])
-            elif ev == 'end':
-                if tag == 'vertex' and cur is not None:
-                    V.append((float(el.get('x')), float(el.get('y')), float(el.get('z'))))
-                elif tag == 'triangle' and cur is not None:
-                    T.append((int(el.get('v1')), int(el.get('v2')), int(el.get('v3'))))
-                elif tag == 'component' and cur is not None:
-                    p = [v for k, v in el.attrib.items() if k.endswith('path')]
-                    comps[cur].append((p[0] if p else None, el.get('objectid'),
-                                       el.get('transform') or '1 0 0 0 1 0 0 0 1 0 0 0'))
-                elif tag == 'object':
-                    objs[cur] = (V, T); cur = None; el.clear()
-                elif tag in ('vertex', 'triangle'):
-                    el.clear()
-        return objs, comps
+    parse = _parse_model
 
     def mat(s): return [float(x) for x in s.split()]
 
@@ -120,9 +149,8 @@ def parse_meshes(tmp):
     robjs, rcomps = parse(root_path)
     cache = {}
     s = open(root_path, encoding='utf-8').read()
-    items = re.findall(r'<item objectid="(\d+)"[^>]*?transform="([^"]+)"', s)
     result = {}
-    for objid, tr in items:
+    for objid, tr in plate_items(s):
         m = mat(tr); tris = []
         srcs = rcomps.get(objid) or [(None, objid, '1 0 0 0 1 0 0 0 1 0 0 0')]
         for (p, oid, ctr) in srcs:
@@ -139,6 +167,125 @@ def parse_meshes(tmp):
                 tris.append([apply(m, apply(mm, V[i])) for i in t])
         if tris: result[objid] = tris
     return result
+
+
+# Mesh health. Reported, never repaired: Prism's promise is that geometry is
+# untouched, and a tool that silently "fixes" a mesh cannot make that promise.
+# The point is to say what is wrong BEFORE eight hours of printing, because
+# these faults are invisible in a preview and only show up as a failed print.
+WELD = 5                  # decimal places: coincident vertices are one vertex
+HOLE_REPORT = 1           # any boundary edge at all is worth a word
+
+
+def _weld(V):
+    """Map each vertex to a canonical index, so two vertices at the same point
+    count as one. Exporters routinely emit a separate vertex per triangle
+    corner, which would otherwise make every edge look like a hole."""
+    canon, out = {}, []
+    for v in V:
+        k = (round(v[0], WELD), round(v[1], WELD), round(v[2], WELD))
+        out.append(canon.setdefault(k, len(canon)))
+    return out, len(canon)
+
+
+def mesh_health(V, T):
+    """Topology faults in one mesh, from its own indices.
+
+    A closed surface has every edge shared by exactly two triangles. One means
+    a hole. Three or more means the surface folds back on itself and no slicer
+    can tell inside from outside there."""
+    idx, nverts = _weld(V)
+    edges = {}
+    degenerate = 0
+    parent = list(range(nverts))
+
+    def find(a):
+        while parent[a] != a:
+            parent[a] = parent[parent[a]]; a = parent[a]
+        return a
+
+    def union(a, b):
+        ra, rb = find(a), find(b)
+        if ra != rb: parent[ra] = rb
+
+    used = set()
+    for t in T:
+        a, b, c = idx[t[0]], idx[t[1]], idx[t[2]]
+        if a == b or b == c or a == c:
+            degenerate += 1               # collapsed to a line or a point
+            continue
+        used.update((a, b, c))
+        union(a, b); union(b, c)
+        for e in ((a, b), (b, c), (c, a)):
+            edges[(min(e), max(e))] = edges.get((min(e), max(e)), 0) + 1
+
+    boundary = sum(1 for n in edges.values() if n == 1)
+    nonmanifold = sum(1 for n in edges.values() if n > 2)
+    shells = len({find(v) for v in used})
+    return {'triangles': len(T), 'boundary': boundary,
+            'nonmanifold': nonmanifold, 'shells': shells,
+            'degenerate': degenerate,
+            'watertight': boundary == 0 and nonmanifold == 0}
+
+
+def health_lines(h):
+    """What to tell someone about one object's mesh.
+
+    Worded as risk and proportion, never as a verdict. Plenty of imperfect
+    meshes print perfectly, and a tool that cries wolf about every model gets
+    ignored on the one that matters. Separate shells are reported as a fact,
+    not a fault: a model of loose parts is supposed to have them."""
+    out = []
+    n = max(1, h['triangles'])
+    if h['nonmanifold']:
+        scale = 'a few' if h['nonmanifold'] * 10000 < n else 'widespread'
+        out.append(f"{h['nonmanifold']} edge(s) where the surface meets itself "
+                   f"({scale}), so inside and outside are ambiguous there")
+    if h['boundary']:
+        scale = 'a pinhole' if h['boundary'] * 10000 < n else 'a real gap'
+        out.append(f"{h['boundary']} open edge(s), so the surface is not closed "
+                   f"({scale}); slicers fill this in by guessing")
+    if h['degenerate']:
+        out.append(f"{h['degenerate']} triangle(s) with no area, usually harmless")
+    if h['shells'] > 1:
+        out.append(f"{h['shells']} separate pieces, which is normal for a "
+                   "multi-part model and a problem only if you expected one")
+    return out
+
+
+def parse_health(tmp):
+    """Mesh health per item on the plate, mirroring parse_meshes' grouping so
+    the numbers line up with the objects a person can see. Read from the SOURCE
+    mesh, before transforms, because moving or turning a part cannot open a
+    hole in it."""
+    root_path = os.path.join(tmp, '3D', '3dmodel.model')
+    if not os.path.exists(root_path):
+        return {}
+    robjs, rcomps = _parse_model(root_path)
+    cache, out = {}, {}
+    src = open(root_path, encoding='utf-8').read()
+    for objid, _tr in plate_items(src):
+        agg = {'triangles': 0, 'boundary': 0, 'nonmanifold': 0,
+               'shells': 0, 'degenerate': 0}
+        for (pth, oid, _ctr) in (rcomps.get(objid) or [(None, objid, '')]):
+            if pth:
+                if pth not in cache:
+                    cache[pth] = _parse_model(os.path.join(tmp, pth.lstrip('/')))
+                o2, _ = cache[pth]
+            else:
+                o2 = robjs
+            if oid not in o2:
+                continue
+            V, T = o2[oid]
+            if not T:
+                continue
+            h = mesh_health(V, T)
+            for k in agg:
+                agg[k] += h[k]
+        if agg['triangles']:
+            agg['watertight'] = agg['boundary'] == 0 and agg['nonmanifold'] == 0
+            out[objid] = agg
+    return out
 
 
 def analyse_object(tris, bed):
@@ -221,8 +368,12 @@ def analyse_file(tmp, bed, skip):
         if os.path.isdir(os.path.join(tmp, '3D')) else 0
     if skip or mesh_bytes > ANALYSE_BUDGET_BYTES:
         return None, mesh_bytes
-    return {objid: analyse_object(tris, bed)
-            for objid, tris in parse_meshes(tmp).items()}, mesh_bytes
+    metrics = {objid: analyse_object(tris, bed)
+               for objid, tris in parse_meshes(tmp).items()}
+    for objid, h in parse_health(tmp).items():
+        if objid in metrics:
+            metrics[objid]['health'] = h
+    return metrics, mesh_bytes
 
 
 ORIENT_SAMPLE = 70000     # faces scored per candidate; plenty for an area sum
@@ -566,6 +717,11 @@ def describe(fname, metrics, plans, support_on):
                             ("" if support_on else " (supports are OFF)"))
             if bits:
                 lines.append(f"  object {o}: " + "; ".join(bits))
+            # Mesh faults last and on their own lines: they are a different
+            # kind of problem from a steep overhang. One is about how to print
+            # the model, the other about whether the model is printable.
+            for hl in health_lines(m.get('health') or {}) if m.get('health') else []:
+                lines.append(f"  object {o}: {hl}")
         if len(lines) == 1:
             lines.append("  clean geometry, no special handling needed")
     for name in ('speed', 'balanced', 'quality'):
