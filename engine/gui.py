@@ -546,8 +546,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
                         args += ['--spectrum-colour', str(body['colour'])]
                 if body.get('supports'):
                     args += ['--supports', str(body['supports'])]
-                if body.get('orient'):
-                    args += ['--orient', str(body['orient'])]
+                if body.get('orient') == 'apply':
+                    args.append('--orient-apply')
+                elif body.get('orient'):
+                    args.append('--orient')
                 for item in (body.get('sets') or []):
                     if '=' in str(item):
                         args += ['--set', str(item)]

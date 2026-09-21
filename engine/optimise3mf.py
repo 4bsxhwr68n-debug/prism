@@ -1620,10 +1620,12 @@ def main():
                     help='set any profile key directly; repeatable')
     ap.add_argument('--list-settings', action='store_true',
                     help='print the settings you can change, then exit')
-    ap.add_argument('--orient', nargs='?', const='suggest', default=None,
-                    choices=['suggest', 'apply'],
-                    help="which way up needs the least support. 'suggest' just "
-                         "says so; 'apply' turns it for you")
+    # Deliberately two switches rather than one flag with an optional value:
+    # `--orient file.3mf` would otherwise swallow the filename as the value.
+    ap.add_argument('--orient', action='store_true',
+                    help='say which way up needs the least support')
+    ap.add_argument('--orient-apply', action='store_true', dest='orient_apply',
+                    help='and turn it for you')
     ap.add_argument('--supports', choices=['auto', 'on', 'off'], default=None,
                     help='look at the model and add supports only where they are '
                          'actually needed')
@@ -1642,6 +1644,12 @@ def main():
         if not vals or any(not 0 <= b <= 100 for b in vals):
             ap.error('--spectrum-biases must each be between 0 and 100')
         return sorted(set(vals))
+
+    # --single also takes an optional value, so rescue a model file that landed
+    # on it rather than silently dropping both the file and the colour.
+    if a.single and str(a.single).lower().endswith('.3mf') and os.path.exists(a.single):
+        a.files.insert(0, a.single)
+        a.single = 'auto'
 
     idx = load_index()
     if a.list_settings:
@@ -1696,7 +1704,7 @@ def main():
         sel = input("Printer number: ").strip()
         key = keys[int(sel) - 1]
         rec = load_printer(key)
-        run_report(a.files, rec, a.no_analyse, a.orient)
+        run_report(a.files, rec, a.no_analyse, a.orient or a.orient_apply)
         m = input("Mode [1=speed 2=balanced 3=quality] (2): ").strip() or '2'
         mode = {'1': 'speed', '2': 'balanced', '3': 'quality'}[m]
         if rec.get('spectrum') and not a.spectrum:
@@ -1717,7 +1725,7 @@ def main():
         key = a.printer
         rec = load_printer(key)
         if a.report:
-            run_report(a.files, rec, a.no_analyse, a.orient)
+            run_report(a.files, rec, a.no_analyse, a.orient or a.orient_apply)
             return
         mode = a.mode
 
@@ -1784,7 +1792,8 @@ def main():
     for f in a.files:
         convert(os.path.abspath(f), rec, key, mode, single, a.dome,
                 a.no_analyse, a.out, spectrum, a.keep_source, overrides,
-                a.supports, a.orient)
+                a.supports,
+                'apply' if a.orient_apply else ('suggest' if a.orient else None))
 
 
 if __name__ == '__main__':

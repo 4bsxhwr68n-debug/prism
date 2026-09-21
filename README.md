@@ -223,7 +223,7 @@ rather than a guarantee. `--supports on` and `--supports off` override it.
 ### Which way up
 
 `--orient` reports which orientation would need the least support, and by how
-much. `--orient apply` turns it for you. In the window it is a three-way choice:
+much. `--orient-apply` turns it for you. In the window it is a three-way choice:
 leave it as placed, tell me, or turn it.
 
 Turning rewrites **where the object sits**, never the mesh, so the geometry
@@ -260,7 +260,8 @@ and shorter, but a much smaller base.
     --spectrum-colour C         #RRGGBB, a palette id, or a name like Teal
     --spectrum-step MM | off    layer height in painted zones
     --spectrum-biases 25,50,75  blend strengths per pair
-    --orient [suggest|apply]    which way up needs least support; apply turns it
+    --orient                    say which way up needs the least support
+    --orient-apply              and turn it for you
     --supports auto|on|off      add supports only where the model needs them
     --keep-source               ignore this printer's standing defaults
     --dome off|H                override the rounded-top layer height
