@@ -78,6 +78,7 @@ jobs:
           # message, which is unreportable by the person it happens to.
           # <nul is required: the failure path ends in `pause`.
           New-Item -ItemType Directory -Path scripttest -Force | Out-Null
+          New-Item -ItemType File -Path empty.in -Force | Out-Null
           Copy-Item windows/Prism.bat scripttest/
           Copy-Item -Recurse engine scripttest/engine
           # Wait on the launcher PROCESS, never on its output stream. Draining
@@ -87,7 +88,7 @@ jobs:
           $sw = [Diagnostics.Stopwatch]::StartNew()
           $p = Start-Process cmd -ArgumentList '/c','Prism.bat' -PassThru -NoNewWindow `
                  -WorkingDirectory scripttest -RedirectStandardOutput bat.log `
-                 -RedirectStandardError bat.err -RedirectStandardInput NUL
+                 -RedirectStandardError bat.err -RedirectStandardInput (Resolve-Path empty.in)
           if (-not $p.WaitForExit(60000)) {
             $p.Kill(); throw "launcher blocked $([int]$sw.Elapsed.TotalSeconds)s instead of returning"
           }
@@ -106,7 +107,7 @@ jobs:
           Set-Content scripttest/engine/gui.py 'raise SystemExit("deliberate failure for the control test")'
           $q = Start-Process cmd -ArgumentList '/c','Prism.bat' -PassThru -NoNewWindow `
                  -WorkingDirectory scripttest -RedirectStandardOutput bad.log `
-                 -RedirectStandardError bad.err -RedirectStandardInput NUL
+                 -RedirectStandardError bad.err -RedirectStandardInput (Resolve-Path empty.in)
           if (-not $q.WaitForExit(60000)) { $q.Kill(); throw "broken launcher hung" }
           $bad = (Get-Content bad.log, bad.err -ErrorAction SilentlyContinue) -join "`n"
           if ($bad -notmatch 'could not start') { $bad; throw "a broken app launched silently: this check proves nothing" }
