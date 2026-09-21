@@ -1229,6 +1229,93 @@ def resolve_target(spec, palette):
     return e, (colour_distance(rgb, e['rgb']) if exact else 0.0)
 
 
+# Saved preferences. The complaint is that settings people spent real time
+# arriving at feel precarious: living in one slicer install, lost on a reinstall
+# or a new machine, re-derived from memory. These are Prism's own overrides, so
+# they are small, portable and readable, and they travel as one file.
+PREFS_NAME = 'preferences.json'
+
+
+def prefs_path():
+    """Alongside the app's other state, honouring XDG where it is set."""
+    base = (os.environ.get('PRISM_PREFS')
+            or os.path.join(os.environ.get('XDG_CONFIG_HOME')
+                            or os.path.join(os.path.expanduser('~'), '.config'),
+                            'prism'))
+    return base if base.endswith('.json') else os.path.join(base, PREFS_NAME)
+
+
+def load_prefs():
+    """Saved overrides, or nothing. Never fatal: a corrupt preferences file
+    must not stop someone converting a model."""
+    try:
+        with open(prefs_path(), encoding='utf-8') as fh:
+            d = json.load(fh)
+        return {str(k): v for k, v in (d.get('settings') or {}).items()}
+    except Exception:
+        return {}
+
+
+def save_prefs(overrides):
+    path = prefs_path()
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, 'w', encoding='utf-8') as fh:
+        json.dump({'settings': overrides}, fh, indent=2, sort_keys=True)
+        fh.write('\n')
+    return path
+
+
+def colour_preview(paths, rec, biases):
+    """What this model's colours would become, BEFORE anything is written.
+
+    The gamut of four semi-translucent filaments is bright and narrow, and
+    until now a person found that out after converting, by looking at a result
+    they did not expect. Planning a colour scheme is the moment the answer is
+    useful, so this answers it while it can still change the plan."""
+    if not rec.get('spectrum'):
+        return ['%s does not blend colours.' % rec['label']]
+    palette = spectrum_palette(rec, len(rec['spectrum']['slots']), biases)
+    out = []
+    for path in paths:
+        out.append('%s:' % os.path.basename(path))
+        try:
+            with zipfile.ZipFile(path) as z:
+                names = z.namelist()
+                cfg = (json.loads(z.read('Metadata/project_settings.config'))
+                       if 'Metadata/project_settings.config' in names else {})
+                xml = (z.read('Metadata/model_settings.config').decode('utf-8', 'replace')
+                       if 'Metadata/model_settings.config' in names else '')
+        except Exception as e:
+            out.append('  could not be read (%s)' % type(e).__name__)
+            continue
+        cols = cfg.get('filament_colour') or []
+        used = sorted(set(used_extruders(xml)) or {1})
+        if not cols:
+            out.append('  no colours declared, so there is nothing to match')
+            continue
+        worst = 0.0
+        for u in used:
+            rgb = cols[u - 1] if 0 < u <= len(cols) and cols[u - 1] else None
+            if not rgb:
+                continue
+            rgb = hex_to_rgb(rgb)
+            e = nearest_colour(rgb, palette)
+            gap = colour_distance(rgb, e['rgb'])
+            worst = max(worst, gap)
+            # A number nobody can interpret is not information. Say how close
+            # it is in words, and keep the figure for anyone who wants it.
+            verdict = ('very close' if gap < 5 else
+                       'close' if gap < COLOUR_GAP_WARN else
+                       'noticeably different' if gap < 30 else
+                       'not reachable, this is the nearest')
+            out.append('  slot %d  %s -> %s %s  (%s, dE %.0f)'
+                       % (u, rgb_to_hex(rgb), e['hex'], e['label'], verdict, gap))
+        if worst > COLOUR_GAP_WARN:
+            out.append('  the palette has no dark end and no white, so deep, '
+                       'muted and pale colours come back brighter than asked')
+    return out
+
+
 def map_source_colours(ms_text, src_cfg, palette, extra_states, report, notes):
     """Repaint the model onto the blended palette.
 
@@ -1868,6 +1955,14 @@ def main():
                          "(default: half the layer height, which hides flat-face banding)")
     ap.add_argument('--spectrum-list', action='store_true',
                     help='print every colour this printer can make, then exit')
+    ap.add_argument('--save-prefs', action='store_true',
+                    help='remember this run\'s settings as your defaults')
+    ap.add_argument('--no-prefs', action='store_true',
+                    help='ignore saved preferences for this run')
+    ap.add_argument('--show-prefs', action='store_true',
+                    help='print saved preferences and where they live')
+    ap.add_argument('--colour-preview', action='store_true',
+                    help="what this model's colours become, without converting")
     ap.add_argument('--spectrum-probe', action='store_true',
                     help='print how many distinct colours the file carries, then exit')
     ap.add_argument('--dome', default=None,
@@ -1932,6 +2027,25 @@ def main():
         print("\nanything else in the profile: --set KEY=VALUE  (%d keys)"
               % len(tpl))
         return
+    if a.show_prefs:
+        pr = load_prefs()
+        print('preferences file: %s%s'
+              % (prefs_path(), '' if os.path.exists(prefs_path()) else '  (none yet)'))
+        for k, v in sorted(pr.items()):
+            print('  %-34s %s' % (k, v))
+        if not pr:
+            print('  nothing saved; use --save-prefs after a run you liked')
+        return
+    if a.colour_preview:
+        if not a.printer:
+            ap.error('--colour-preview needs --printer')
+        if not a.files:
+            ap.error('--colour-preview needs a file')
+        for line in colour_preview([os.path.abspath(f) for f in a.files],
+                                   load_printer(a.printer),
+                                   parse_biases(a.spectrum_biases)):
+            print(line)
+        return
     if a.spectrum_probe:
         print(probe_colour_intent([os.path.abspath(f) for f in a.files]))
         return
@@ -1994,25 +2108,40 @@ def main():
     if a.single:
         single = a.single if a.single.startswith('#') else rec['default_colour']
 
-    overrides = {}
+    overrides = {} if a.no_prefs else load_prefs()
+    explicit = set()
     # NB: not `key` — that holds the printer key, and rebinding it here renamed
     # every output file after the last entry in QUICK_SETTINGS.
     for flag, setting in QUICK_SETTINGS.items():
         v = getattr(a, 'qs_' + flag.replace('-', '_'), None)
         if v is not None:
             overrides[setting] = v
+            explicit.add(setting)
     for item in (a.sets or []):
         if '=' not in item:
             ap.error('--set wants KEY=VALUE, got %r' % item)
         k, v = item.split('=', 1)
         overrides[k.strip()] = v.strip()
+        explicit.add(k.strip())
     for k, v in list(overrides.items()):
         if k in PERCENT_KEYS and not str(v).endswith('%'):
             overrides[k] = str(v) + '%'
         allowed = rec['enums'].get(k)
         if allowed and str(overrides[k]) not in allowed:
+            # A saved preference can be wrong for THIS printer without being
+            # wrong. Drop it and say so, rather than refusing to convert.
+            if k not in explicit:
+                print('preference %s=%s is not supported on %s, ignoring it'
+                      % (k, overrides[k], rec['label']))
+                del overrides[k]
+                continue
             ap.error('%s=%s is not supported on %s. Allowed: %s'
                      % (k, v, rec['label'], ', '.join(sorted(allowed))))
+    from_prefs = sorted(set(overrides) - explicit)
+    if from_prefs:
+        print('using saved preferences: %s' % ', '.join(from_prefs))
+    if a.save_prefs:
+        print('saved your settings to %s' % save_prefs(overrides))
 
     spectrum = None
     if a.spectrum:
