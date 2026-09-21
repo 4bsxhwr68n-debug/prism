@@ -47,9 +47,13 @@ it is from an unidentified developer, because the app is ad-hoc signed rather
 than notarised: right-click it and choose Open, once. It uses the Python already
 on your Mac, so there is nothing to install.
 
-**Windows.** Unzip anywhere and double-click `Prism.bat`. You need Python 3 from
-[python.org](https://www.python.org/downloads/) or the Microsoft Store. No
-packages, no pip, no virtualenv.
+**Windows.** Unzip and double-click `Prism.exe`. Nothing to install. Windows
+SmartScreen warns on an unsigned binary: choose More info, then Run anyway. A
+smaller script version is also attached for anyone who already has Python.
+
+**Linux.** Unpack the tarball and run `./prism`. Nothing to install. A script
+version is also available, which needs `python3` and, for the file dialog, one
+of `zenity`, `kdialog` or `yad`.
 
 ## Build from source
 
@@ -60,6 +64,7 @@ nothing beyond what your machine already has.
     cd prism
     ./macos/build.sh                 # writes ~/Desktop/Prism.app
     ./windows/build.sh               # writes ~/Desktop/Prism (Windows).zip
+    ./linux/build.sh                 # writes ~/Prism-Linux.tar.gz
 
 Pass a path to either script to put the result somewhere else.
 
@@ -163,6 +168,12 @@ filaments until the eye reads them as one colour. Prism sets that up:
   survives.
 - Halves the layer height so a full colour cycle fits inside one nominal layer.
   Without that, flat faces print one filament neat and band visibly.
+
+**[How colour and painting work](docs/COLOUR.md)** covers this properly: whether
+you can paint manually, how to choose colours, and what the printer can actually
+produce. The short version is that Prism generates the mapping for you, and if
+you want specific areas in specific colours you paint in your slicer first and
+let Prism translate.
 
 Honest edges: the gamut has no dark end, so a near-black target gets the closest
 available colour and the run says so. Blending roughly doubles print time and

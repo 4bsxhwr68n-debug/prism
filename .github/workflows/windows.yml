@@ -1,4 +1,4 @@
-name: Windows build
+name: Binaries
 
 # Builds Prism.exe on a real Windows machine, because PyInstaller cannot
 # cross-compile and this project is developed on a Mac. Runs on every tag, and
@@ -12,7 +12,7 @@ permissions:
   contents: write
 
 jobs:
-  build:
+  windows:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -65,3 +65,56 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: gh release upload ${{ github.ref_name }} (Get-Item Prism-*-Windows.zip).Name --clobber
         shell: pwsh
+
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install PyInstaller
+        run: pip install --upgrade pyinstaller
+
+      - name: Build the Prism binary
+        run: |
+          pyinstaller --onefile --console --name prism \
+            --distpath dist \
+            --paths engine \
+            --add-data "engine/data:data" \
+            --hidden-import gui \
+            --hidden-import optimise3mf \
+            --hidden-import mixer \
+            linux/prism_linux.py
+
+      - name: Smoke test the binary
+        run: |
+          n=$(./dist/prism --engine --list | wc -l)
+          [ "$n" -ge 20 ] || { echo "expected the printer list, got $n lines"; exit 1; }
+          echo "printer list: $n entries"
+          ./dist/prism --engine --printer u1 --spectrum-list | head -3
+
+      - name: Package
+        run: |
+          tag="${{ github.ref_name }}"
+          case "$tag" in v*) ;; *) tag=dev ;; esac
+          mkdir -p "pkg/prism"
+          cp dist/prism "pkg/prism/prism"
+          cp README.md "pkg/prism/README.md"
+          cp docs/COLOUR.md "pkg/prism/COLOUR.md" 2>/dev/null || true
+          chmod +x "pkg/prism/prism"
+          tar -czf "Prism-$tag-Linux.tar.gz" -C pkg prism
+          ls -lh Prism-*-Linux.tar.gz
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Prism-Linux
+          path: Prism-*-Linux.tar.gz
+
+      - name: Attach to the release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload ${{ github.ref_name }} Prism-*-Linux.tar.gz --clobber

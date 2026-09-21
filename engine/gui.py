@@ -9,7 +9,7 @@ Files are chosen through the NATIVE picker, not an upload, so real paths are
 kept: output lands next to the original exactly as it does when files are
 dropped on the icon, and a 20MB model never has to move.
 """
-import http.server, json, os, re, secrets, socket, subprocess, sys, threading
+import http.server, json, os, re, secrets, shutil, socket, subprocess, sys, threading
 import time, webbrowser
 
 # Frozen into a single Windows .exe, sys.executable IS that exe and there is no
@@ -37,8 +37,29 @@ def engine(args, timeout=900):
     return p.returncode, p.stdout, p.stderr
 
 
+# Linux has no single native dialog, so the usual three are tried in turn.
+# Each returns one path per line; a desktop without any of them gets a clear
+# message rather than a button that silently does nothing.
+LINUX_PICKERS = [
+    ['zenity', '--file-selection', '--multiple', '--separator=\n',
+     '--title=Choose 3MF files', '--file-filter=3MF files | *.3mf *.3MF'],
+    ['kdialog', '--getopenfilename', '.', '*.3mf', '--multiple',
+     '--separate-output'],
+    ['yad', '--file', '--multiple', '--separator=\n',
+     '--file-filter=3MF files | *.3mf'],
+]
+
+
 def pick_files():
     """Native multi-select file dialog. Returns absolute paths."""
+    if sys.platform.startswith('linux'):
+        for cmd in LINUX_PICKERS:
+            if not shutil.which(cmd[0]):
+                continue
+            p = subprocess.run(cmd, capture_output=True, text=True)
+            return [l for l in p.stdout.replace('|', '\n').splitlines()
+                    if l.strip() and os.path.exists(l.strip())]
+        return []
     if sys.platform == 'darwin':
         script = ('try\n'
                   'set fs to choose file with prompt "Choose 3MF files to optimise"'
@@ -73,6 +94,9 @@ def reveal(path):
     try:
         if sys.platform == 'darwin':
             subprocess.run(['open', '-R', path])
+        elif sys.platform.startswith('linux'):
+            # no universal "reveal and select", so open the containing folder
+            subprocess.run(['xdg-open', os.path.dirname(os.path.abspath(path))])
         else:
             subprocess.run('explorer /select,"%s"' % os.path.normpath(path),
                            shell=True)
@@ -320,6 +344,7 @@ function probe(){api('/api/probe',{files:S.files}).then(r=>{
   :'This file is a single colour, so there is nothing to map. Pick the colour to print it in.';});}
 
 document.getElementById('pick').onclick=()=>api('/api/pick',{}).then(r=>{
+ if(r.note){document.getElementById('filehint').textContent=r.note;return;}
  if(!r.files.length)return; S.files=r.files;
  document.getElementById('filehint').textContent=r.files.length+' file'+(r.files.length>1?'s':'');
  document.getElementById('files').innerHTML=r.files.map(f=>'<div>'+f.split('/').pop().split('\\').pop()+'</div>').join('');
@@ -347,7 +372,7 @@ document.getElementById('go').onclick=()=>{const g=document.getElementById('go')
   o.appendChild(h);
   const p=document.createElement('pre');p.style.marginTop='9px';p.textContent=r.text.trim();o.appendChild(p);
   if(r.outputs&&r.outputs.length){const b=document.createElement('button');
-   b.textContent='Show in '+(r.mac?'Finder':'Explorer');b.style.marginTop='11px';
+   b.textContent=r.reveal_label;b.style.marginTop='11px';
    b.onclick=()=>api('/api/reveal',{path:r.outputs[0]});o.appendChild(b);}
   g.disabled=false;});};
 </script></body></html>"""
@@ -407,7 +432,13 @@ class Handler(http.server.BaseHTTPRequestHandler):
         files = [f for f in (body.get('files') or []) if os.path.exists(f)]
         try:
             if path == '/api/pick':
-                self._send(json.dumps({'files': pick_files()}))
+                picked = pick_files()
+                note = ''
+                if not picked and sys.platform.startswith('linux') and \
+                        not any(shutil.which(c[0]) for c in LINUX_PICKERS):
+                    note = ('No file dialog found. Install zenity, kdialog or '
+                            'yad, or pass files on the command line.')
+                self._send(json.dumps({'files': picked, 'note': note}))
             elif path == '/api/settings':
                 self._send(json.dumps(settings_for(body.get('printer', ''))))
             elif path == '/api/palette':
@@ -438,7 +469,13 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 outs = re.findall(r'^OK -> (.+)$', out, re.M)
                 self._send(json.dumps({'ok': rc == 0, 'text': out + err,
                                        'outputs': outs,
-                                       'mac': sys.platform == 'darwin'}))
+                                       'mac': sys.platform == 'darwin',
+                                       'reveal_label': (
+                                           'Show in Finder'
+                                           if sys.platform == 'darwin' else
+                                           'Show in Files'
+                                           if sys.platform.startswith('linux')
+                                           else 'Show in Explorer')}))
             else:
                 self.send_error(404)
         except Exception as exc:
