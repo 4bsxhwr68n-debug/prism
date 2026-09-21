@@ -80,18 +80,23 @@ jobs:
           New-Item -ItemType Directory -Path scripttest -Force | Out-Null
           Copy-Item windows/Prism.bat scripttest/
           Copy-Item -Recurse engine scripttest/engine
+          # Wait on the launcher PROCESS, never on its output stream. Draining
+          # the stream waits for EOF, and the detached pythonw inherits those
+          # handles, so `& cmd /c ... 2>&1` blocks for the life of the app and
+          # reports the launcher as hung when it exited seconds ago.
           $sw = [Diagnostics.Stopwatch]::StartNew()
-          Push-Location scripttest
-          $out = & cmd /c "Prism.bat <nul 2>&1"
-          Pop-Location
+          $p = Start-Process cmd -ArgumentList '/c','Prism.bat' -PassThru -NoNewWindow `
+                 -WorkingDirectory scripttest -RedirectStandardOutput bat.log `
+                 -RedirectStandardError bat.err -RedirectStandardInput NUL
+          if (-not $p.WaitForExit(60000)) {
+            $p.Kill(); throw "launcher blocked $([int]$sw.Elapsed.TotalSeconds)s instead of returning"
+          }
           $sw.Stop()
+          $out = (Get-Content bat.log, bat.err -ErrorAction SilentlyContinue) -join "`n"
           if ($out -match 'could not start') { $out; throw "the launcher could not start the app" }
           # It must RETURN, not stay attached for the life of the app. An
           # earlier version blocked for the full 900s idle timeout, which would
           # have left a console window open on the user's desktop all session.
-          if ($sw.Elapsed.TotalSeconds -gt 60) {
-            throw "launcher blocked $([int]$sw.Elapsed.TotalSeconds)s instead of returning"
-          }
           Write-Host "launcher returned in $([int]$sw.Elapsed.TotalSeconds)s and started the app"
           Get-Process pythonw -ErrorAction SilentlyContinue | Stop-Process -Force
 
@@ -99,9 +104,11 @@ jobs:
           # this the check above would pass just as happily on a launcher that
           # swallows everything, which is the bug being fixed.
           Set-Content scripttest/engine/gui.py 'raise SystemExit("deliberate failure for the control test")'
-          Push-Location scripttest
-          $bad = & cmd /c "Prism.bat <nul 2>&1"
-          Pop-Location
+          $q = Start-Process cmd -ArgumentList '/c','Prism.bat' -PassThru -NoNewWindow `
+                 -WorkingDirectory scripttest -RedirectStandardOutput bad.log `
+                 -RedirectStandardError bad.err -RedirectStandardInput NUL
+          if (-not $q.WaitForExit(60000)) { $q.Kill(); throw "broken launcher hung" }
+          $bad = (Get-Content bad.log, bad.err -ErrorAction SilentlyContinue) -join "`n"
           if ($bad -notmatch 'could not start') { $bad; throw "a broken app launched silently: this check proves nothing" }
           Write-Host "control: a broken app is reported, not swallowed"
 
