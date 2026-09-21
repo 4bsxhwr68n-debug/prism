@@ -104,12 +104,18 @@ def plate_items(src):
     return out
 
 
-def _parse_model(path):
+def _parse_model(path, cache=None):
     """Objects as (vertices, triangle index triples) plus their components.
+
+    `cache` is shared by the geometry and health passes so a file is parsed
+    once. Without it each pass reads every .model again, which doubled
+    conversion time on a large model for no new information.
 
     Indices, not coordinates: edge topology needs to know which vertices are
     the SAME vertex, and comparing floats cannot tell a shared vertex from two
     that happen to coincide."""
+    if cache is not None and path in cache:
+        return cache[path]
     objs, comps = {}, {}
     cur, V, T = None, None, None
     for ev, el in ET.iterparse(path, events=('start', 'end')):
@@ -129,14 +135,18 @@ def _parse_model(path):
                 objs[cur] = (V, T); cur = None; el.clear()
             elif tag in ('vertex', 'triangle'):
                 el.clear()
+    if cache is not None:
+        cache[path] = (objs, comps)
     return objs, comps
 
 
-def parse_meshes(tmp):
+def parse_meshes(tmp, cache=None):
     root_path = os.path.join(tmp, '3D', '3dmodel.model')
     if not os.path.exists(root_path):
         return {}
-    parse = _parse_model
+
+    def parse(pth):
+        return _parse_model(pth, cache)
 
     def mat(s): return [float(x) for x in s.split()]
 
@@ -147,7 +157,11 @@ def parse_meshes(tmp):
                 m[2]*x + m[5]*y + m[8]*z + m[11])
 
     robjs, rcomps = parse(root_path)
-    cache = {}
+    # NB: not `cache` — that is the shared parse cache this function closes
+    # over, and rebinding it here silently emptied it, so every referenced
+    # .model got parsed twice. Third shadowing bug in this file, after `key`
+    # and `plan`.
+    seen = {}
     s = open(root_path, encoding='utf-8').read()
     result = {}
     for objid, tr in plate_items(s):
@@ -155,9 +169,9 @@ def parse_meshes(tmp):
         srcs = rcomps.get(objid) or [(None, objid, '1 0 0 0 1 0 0 0 1 0 0 0')]
         for (p, oid, ctr) in srcs:
             if p:
-                if p not in cache:
-                    cache[p] = parse(os.path.join(tmp, p.lstrip('/')))
-                o2, _ = cache[p]
+                if p not in seen:
+                    seen[p] = parse(os.path.join(tmp, p.lstrip('/')))
+                o2, _ = seen[p]
             else:
                 o2 = robjs
             if oid not in o2: continue
@@ -253,7 +267,7 @@ def health_lines(h):
     return out
 
 
-def parse_health(tmp):
+def parse_health(tmp, cache=None):
     """Mesh health per item on the plate, mirroring parse_meshes' grouping so
     the numbers line up with the objects a person can see. Read from the SOURCE
     mesh, before transforms, because moving or turning a part cannot open a
@@ -261,17 +275,15 @@ def parse_health(tmp):
     root_path = os.path.join(tmp, '3D', '3dmodel.model')
     if not os.path.exists(root_path):
         return {}
-    robjs, rcomps = _parse_model(root_path)
-    cache, out = {}, {}
+    robjs, rcomps = _parse_model(root_path, cache)
+    out = {}
     src = open(root_path, encoding='utf-8').read()
     for objid, _tr in plate_items(src):
         agg = {'triangles': 0, 'boundary': 0, 'nonmanifold': 0,
                'shells': 0, 'degenerate': 0}
         for (pth, oid, _ctr) in (rcomps.get(objid) or [(None, objid, '')]):
             if pth:
-                if pth not in cache:
-                    cache[pth] = _parse_model(os.path.join(tmp, pth.lstrip('/')))
-                o2, _ = cache[pth]
+                o2, _ = _parse_model(os.path.join(tmp, pth.lstrip('/')), cache)
             else:
                 o2 = robjs
             if oid not in o2:
@@ -368,9 +380,10 @@ def analyse_file(tmp, bed, skip):
         if os.path.isdir(os.path.join(tmp, '3D')) else 0
     if skip or mesh_bytes > ANALYSE_BUDGET_BYTES:
         return None, mesh_bytes
+    shared = {}
     metrics = {objid: analyse_object(tris, bed)
-               for objid, tris in parse_meshes(tmp).items()}
-    for objid, h in parse_health(tmp).items():
+               for objid, tris in parse_meshes(tmp, shared).items()}
+    for objid, h in parse_health(tmp, shared).items():
         if objid in metrics:
             metrics[objid]['health'] = h
     return metrics, mesh_bytes
