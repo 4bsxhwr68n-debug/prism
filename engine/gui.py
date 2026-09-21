@@ -139,6 +139,20 @@ def palette(key):
 # The last field is the point: most people meet these settings without ever
 # being told what they change, so the panel explains rather than just exposes.
 QUICK = [
+ ('fan_max_speed', 'Part cooling fan', 'pctslider', 'Fan max speed',
+  'The fan blowing on the part as it prints. Cooling sets plastic fast, which '
+  'helps overhangs and fine detail, but too much of it weakens the bond between '
+  'layers and can warp or crack taller prints. The U1 fans are strong; if walls '
+  'are splitting or corners lifting, this is the first thing to bring down.'),
+ ('additional_cooling_fan_speed', 'Auxiliary fan', 'pctslider',
+  'Additional cooling fan speed',
+  'The second, larger fan that cools the whole chamber rather than the nozzle '
+  'area. Useful on PLA, usually unwanted on ABS and ASA where a warm chamber is '
+  'what stops the part splitting.'),
+ ('overhang_fan_speed', 'Overhang fan', 'pctslider', 'Overhang fan speed',
+  'A separate speed used only over overhangs and bridges, where the plastic has '
+  'nothing underneath and has to set in the air. Usually higher than the main '
+  'fan, and worth keeping high even if you turn the main one down.'),
  ('sparse_infill_pattern', 'Infill pattern', 'enum', 'Sparse infill pattern',
   'The lattice inside the part. Gyroid is equally strong in every direction and '
   'never crosses itself, so it prints cleanly and quietly. Grid is quicker but '
@@ -202,6 +216,7 @@ def settings_for(key):
             continue
         cur = tpl[k]
         cur = cur[0] if isinstance(cur, list) and cur else cur
+        cur = str(cur).rstrip('%')
         rows.append({'key': k, 'label': label, 'kind': kind,
                      'slicer': slicer_name, 'help': helptext,
                      'effective': defaults.get(k, cur),
@@ -271,6 +286,10 @@ white-space:pre-wrap;word-break:break-word}
  border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink);width:100%}
 textarea{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px;resize:vertical}
 .mark{color:var(--accent);font-weight:600}
+.sl{display:flex;align-items:center;gap:10px}
+.sl input[type=range]{flex:1;accent-color:var(--accent);min-width:0}
+.sl output{font:500 12.5px "IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+ color:var(--dim);width:42px;text-align:right;flex:none}
 .i{display:inline-grid;place-items:center;width:15px;height:15px;border-radius:50%;
  border:1px solid var(--line);color:var(--dim);font-size:10px;font-weight:700;
  cursor:pointer;margin-left:5px;vertical-align:1px;background:var(--card);
@@ -376,7 +395,11 @@ function loadSettings(){if(!S.printer)return;
  api('/api/settings',{printer:S.printer}).then(r=>{
   document.getElementById('advgrid').innerHTML=r.rows.map((f,i)=>{
    const mark=f.prism?' <span class="mark">Prism</span>':'';
-   const ctl=f.kind==='enum'&&f.options.length
+   const ctl=f.kind==='pctslider'
+    ? `<div class="sl"><input type="range" min="0" max="100" step="5"
+         value="${f.effective}" data-k="${f.key}" data-def="${f.effective}">
+       <output>${f.effective}%</output></div>`
+    : f.kind==='enum'&&f.options.length
     ? `<select data-k="${f.key}"><option value="">${f.effective}</option>`+
       f.options.map(o=>`<option value="${o}">${o}</option>`).join('')+`</select>`
     : `<input data-k="${f.key}" placeholder="${f.effective}">`;
@@ -388,7 +411,9 @@ function loadSettings(){if(!S.printer)return;
 
 function collectSets(){const out=[];
  document.querySelectorAll('#advgrid [data-k]').forEach(el=>{
-  const v=(el.value||'').trim(); if(v) out.push(el.dataset.k+'='+v);});
+  const v=(el.value||'').trim();
+  if(el.type==='range'){ if(v!==el.dataset.def) out.push(el.dataset.k+'='+v); return; }
+  if(v) out.push(el.dataset.k+'='+v);});
  (document.getElementById('extra').value||'').split('\n').forEach(l=>{
   l=l.trim(); if(l&&l.includes('=')) out.push(l);});
  return out;}
@@ -400,6 +425,9 @@ function loadPalette(){api('/api/palette',{printer:S.printer}).then(r=>{S.palett
   `<div class="sw" style="margin-top:11px"><button class="chip sel" data-c=""><div class="dot" style="background:linear-gradient(135deg,#08ABFB,#F9ED3D 50%,#D93B90)"></div>Map automatically</button></div>`+
   `<div class="swhead">Loaded filaments</div><div class="sw">${solids.map(chip).join('')}</div>`+
   `<div class="swhead">Blends</div><div class="sw">${blends.map(chip).join('')}</div>`;});}
+document.getElementById('advgrid').oninput=e=>{
+ if(e.target.type==='range'){const o=e.target.parentNode.querySelector('output');
+  if(o)o.textContent=e.target.value+'%';}};
 document.getElementById('advgrid').onclick=e=>{const b=e.target.closest('.i');
  if(!b)return; const h=document.getElementById(b.dataset.h);
  if(h) h.classList.toggle('on');};

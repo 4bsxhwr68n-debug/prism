@@ -581,6 +581,9 @@ def describe(fname, metrics, plans, support_on):
 # The handful of settings worth a short flag. Everything else in the profile is
 # reachable through --set, which is the advanced door.
 QUICK_SETTINGS = {
+    'fan':              'fan_max_speed',
+    'aux-fan':          'additional_cooling_fan_speed',
+    'overhang-fan':     'overhang_fan_speed',
     'infill':           'sparse_infill_pattern',
     'infill-density':   'sparse_infill_density',
     'interface-layers': 'support_interface_top_layers',
@@ -1312,9 +1315,25 @@ def build_project_settings(src, rec, single, plan, notes, spectrum=None,
                          f"left at {out[k]}")
             continue
         was = out.get(k)
-        if str(was) == str(v):
-            continue
-        out[k] = str(v)
+        if isinstance(was, list):
+            # a per-slot setting: every loaded filament gets the same value
+            newv = [str(v)] * len(was)
+            if was == newv:
+                continue
+            out[k] = newv
+        else:
+            if str(was) == str(v):
+                continue
+            out[k] = str(v)
+        # the cooling logic ramps between min and max, so a cap below the
+        # current minimum would leave the two crossed over
+        if k == 'fan_max_speed' and isinstance(out.get('fan_min_speed'), list):
+            try:
+                cap = float(v)
+                out['fan_min_speed'] = [str(int(min(float(x), cap)))
+                                        for x in out['fan_min_speed']]
+            except (TypeError, ValueError):
+                pass
         applied.append(f"{k}={v}" + ("  [yours]" if k in chosen else "")
                        + (f" (source asked for {was})"
                           if k in carried_keys else f" (was {was})"))
@@ -1342,11 +1361,20 @@ def build_project_settings(src, rec, single, plan, notes, spectrum=None,
     # them here would claim they belong to a preset that has never heard of
     # them, so they are left out rather than risked.
     NOT_PROCESS = ('mixed_filament_', 'dithering_', 'mixed_color_')
+    fil_keys = set()
+    for prof in (rec.get('filaments') or {}).values():
+        fil_keys |= set(prof.get('values') or ())
     changed = sorted(k for k, v in out.items()
                      if not k.startswith('filament_')
                      and not k.startswith(NOT_PROCESS)
+                     and k not in fil_keys
                      and k in tpl and tpl[k] != v
                      and not isinstance(v, list))
+    # Per-slot settings such as the fans live in the FILAMENT presets. Declared
+    # in the process entry they would be ignored and reloaded, which is exactly
+    # how the infill silently reverted.
+    changed_fil = sorted(k for k, v in out.items()
+                         if k in fil_keys and k in tpl and tpl[k] != v)
     # Shape is [process, one per filament slot, printer]. The Creality-dialect
     # templates omit the key entirely even though Creality projects use it, and
     # a captured template can carry the wrong number of slots, so it is rebuilt
@@ -1357,12 +1385,15 @@ def build_project_settings(src, rec, single, plan, notes, spectrum=None,
     printer_entry = old_dss[-1] if len(old_dss) >= 2 else ''
     fil_entries = old_dss[1:-1] if len(old_dss) > 2 else []
     fil_entries = (list(fil_entries) + [''] * n)[:n]
+    if changed_fil:
+        fil_entries = [';'.join([x for x in e.split(';') if x and x not in changed_fil]
+                                + changed_fil) for e in fil_entries]
     keep = [x for x in proc_entry.split(';') if x and x not in changed]
     out['different_settings_to_system'] = (
         [';'.join(keep + changed)] + fil_entries + [printer_entry])
-    if changed:
-        notes.append(f"{len(changed)} setting(s) marked as modified so the "
-                     "slicer keeps them")
+    if changed or changed_fil:
+        notes.append(f"{len(changed) + len(changed_fil)} setting(s) marked as "
+                     "modified so the slicer keeps them")
 
     out['version'] = rec['project_version']
     out['from'] = 'project'
