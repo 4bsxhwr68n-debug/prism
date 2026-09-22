@@ -2261,11 +2261,38 @@ def convert(src_path, rec, key, mode, single, dome_override, skip_analyse,
         shutil.rmtree(tmp, ignore_errors=True)
 
 
-def run_report(files, rec, skip_analyse, orient=False):
+def run_report(files, rec, skip_analyse, orient=False, units=None, up=None):
     for f in files:
+        # A mesh is not a zip. Reporting on one means importing it first, and
+        # importing needs the two answers it does not carry. Without them there
+        # is nothing honest to measure, because every number depends on the
+        # scale, so say so rather than opening it as an archive and dying.
+        if os.path.splitext(f)[1].lower() in MESH_EXTS:
+            if not (units and up):
+                print('%s:' % os.path.basename(f))
+                print('  an %s carries no units and no up axis, so it cannot be '
+                      'measured until those are chosen.'
+                      % os.path.splitext(f)[1].lstrip('.').upper())
+                continue
+            try:
+                f = import_mesh(f, rec, units, up, tempfile.mkdtemp())
+            except SystemExit:
+                raise
+            except Exception as e:
+                print('%s: could not be read (%s)'
+                      % (os.path.basename(f), type(e).__name__))
+                continue
         tmp = tempfile.mkdtemp(prefix='3mfrep_')
         try:
-            with zipfile.ZipFile(f) as z:
+            try:
+                z = zipfile.ZipFile(f)
+            except zipfile.BadZipFile:
+                # Anything else that is not a 3mf: a clear line, not a
+                # traceback out of the middle of the zip module.
+                print('%s: not a 3mf, and not a mesh Prism can import'
+                      % os.path.basename(f))
+                continue
+            with z:
                 z.extractall(tmp)
             sp = os.path.join(tmp, 'Metadata', 'project_settings.config')
             src_cfg = {}
@@ -2461,7 +2488,8 @@ def main():
         sel = input("Printer number: ").strip()
         key = keys[int(sel) - 1]
         rec = load_printer(key)
-        run_report(a.files, rec, a.no_analyse, a.orient or a.orient_apply)
+        run_report(a.files, rec, a.no_analyse, a.orient or a.orient_apply,
+                   a.units, a.up)
         m = input("Mode [1=speed 2=balanced 3=quality] (2): ").strip() or '2'
         mode = {'1': 'speed', '2': 'balanced', '3': 'quality'}[m]
         if rec.get('spectrum') and not a.spectrum:
@@ -2482,7 +2510,8 @@ def main():
         key = a.printer
         rec = load_printer(key)
         if a.report:
-            run_report(a.files, rec, a.no_analyse, a.orient or a.orient_apply)
+            run_report(a.files, rec, a.no_analyse, a.orient or a.orient_apply,
+                   a.units, a.up)
             return
         mode = a.mode
 

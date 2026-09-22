@@ -608,18 +608,18 @@ function meshCheck(){
   body.querySelectorAll('[data-u]').forEach(b=>b.onclick=()=>{
     S.units=b.dataset.u;
     body.querySelectorAll('[data-u]').forEach(x=>x.classList.remove('sel'));
-    b.classList.add('sel');refresh();});
+    b.classList.add('sel');refresh();analyse();});
   body.querySelectorAll('[data-up]').forEach(b=>b.onclick=()=>{
     S.up=b.dataset.up;
     body.querySelectorAll('[data-up]').forEach(x=>x.classList.remove('sel'));
-    b.classList.add('sel');refresh();});
+    b.classList.add('sel');refresh();analyse();});
  }).catch(()=>{body.textContent='could not measure it';});
 }
 
 function analyse(){if(!S.files.length||!S.printer)return;
  document.getElementById('c3').classList.remove('off');
  document.getElementById('report').innerHTML='<span class="spin"></span> analysing…';
- api('/api/report',{printer:S.printer,files:S.files,
+ api('/api/report',{printer:S.printer,files:S.files,units:S.units||null,up:S.up||null,
    orient:!!S.orient}).then(r=>{
   document.getElementById('report').textContent=r.text.trim()||'no analysis available';});}
 
@@ -737,6 +737,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 rargs = ['--printer', body.get('printer', ''), '--report']
                 if body.get('orient'):
                     rargs.append('--orient')
+                if body.get('units'):
+                    rargs += ['--units', str(body['units'])]
+                if body.get('up'):
+                    rargs += ['--up', str(body['up'])]
                 rc, out, err = engine(rargs + files)
                 self._send(json.dumps({'text': out or err}))
             elif path == '/api/meshinfo':
