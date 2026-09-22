@@ -1392,6 +1392,58 @@ def explain(term, rec=None):
     return explain_lines(hits[0], db[hits[0]], rec)
 
 
+# Settings that move print time enough to be worth naming. Deliberately short:
+# a drift report that lists two hundred keys is noise, and the ones that cost
+# hours are few.
+TIME_KEYS = (
+    'inner_wall_acceleration', 'outer_wall_acceleration', 'default_acceleration',
+    'travel_speed', 'outer_wall_speed', 'inner_wall_speed', 'sparse_infill_speed',
+    'top_surface_speed', 'initial_layer_speed', 'layer_height',
+    'sparse_infill_density', 'wall_loops', 'top_shell_layers',
+    'bottom_shell_layers', 'ironing_type', 'seam_slope_type',
+    'seam_slope_conditional', 'staggered_inner_seams', 'enable_arc_fitting',
+)
+
+
+def _scalar(v):
+    if isinstance(v, list):
+        v = v[0] if v else None
+    return None if v is None else str(v)
+
+
+def preset_drift(cfg, rec):
+    """Settings that disagree with the preset the file NAMES, undeclared.
+
+    A project records which settings its owner deliberately changed. Anything
+    else is supposed to be the named preset's own value. When it is not, the
+    file says one thing and contains another, and nothing in a slicer shows it.
+
+    This is not hypothetical. Prism itself shipped exactly that fault for two
+    months: every Snapmaker U1 project named "0.20 Standard" while carrying the
+    settings of a custom preset somebody had tuned for a lamp, and the only
+    symptom was prints taking about twice as long."""
+    if not cfg or not rec:
+        return []
+    named = str(cfg.get('printer_settings_id') or '')
+    # Only meaningful when the file is FOR this printer. A project built for
+    # another machine differs everywhere, legitimately.
+    if named and rec.get('printer_id') and named != rec['printer_id']:
+        return []
+    declared = set()
+    d = cfg.get('different_settings_to_system')
+    if isinstance(d, list) and d:
+        declared = {x for x in str(d[0]).split(';') if x}
+    tpl = rec.get('template') or {}
+    out = []
+    for k in TIME_KEYS:
+        if k in declared or k not in cfg or k not in tpl:
+            continue
+        a, b = _scalar(cfg[k]), _scalar(tpl[k])
+        if a is not None and b is not None and a != b:
+            out.append((k, a, b))
+    return out
+
+
 def load_problems():
     try:
         with open(os.path.join(TOOL_DIR, 'data', 'problems.json'),
@@ -1444,6 +1496,15 @@ def problem_findings(kind, paths, rec):
         elif kind == 'slow':
             for sn in slow_notes(cfg):
                 found.append('%s: %s' % (name, sn))
+            drift = preset_drift(cfg, rec)
+            if drift:
+                found.append('%s names the preset %r but does not contain it. '
+                             'These differ and are not marked as changes, so '
+                             'nothing in a slicer would show you:'
+                             % (name, str(cfg.get('print_settings_id') or '?')))
+                for k, has, should in drift:
+                    found.append('    %s is %s, the preset says %s'
+                                 % (k, has, should))
         elif kind == 'supportsettings':
             for k in ('support_top_z_distance', 'support_interface_top_layers'):
                 if k in cfg:

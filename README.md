@@ -221,6 +221,13 @@ failed prints is a guess, and "object 8 has 151mm2 of overhang and supports are
 OFF" is not. Where it cannot see the cause, it says so rather than guessing.
 Stringing is damp filament, and no setting in your project file will fix it.
 
+Asking why a print is slow also checks whether the file contains the preset it
+claims. A project records which settings its owner deliberately changed;
+anything else is supposed to be the named preset's own value, and when it is
+not, the file says one thing and contains another with no sign of it in any
+slicer. Prism shipped exactly that fault for two months, so it now looks for it
+in yours.
+
 ## Settings
 
 Every printer gets three standing defaults, applied after the source's own
