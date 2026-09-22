@@ -389,7 +389,19 @@ guess them.</p>
 <div class="hint" id="fshint"></div>
 <div id="swwrap"></div>
 <button id="cpbtn" type="button">Show what my colours become</button>
-<pre id="cpout" hidden></pre></div></div>
+<pre id="cpout" hidden></pre>
+<label for="fsstep">Blend detail</label>
+<select id="fsstep">
+ <option value="">Finest: a full colour cycle per normal layer (about 2x the time)</option>
+ <option value="0.14">Finer: about 1.4x the time, slight banding on flat faces</option>
+ <option value="0.16">Coarser: about 1.25x the time, more banding on flat faces</option>
+ <option value="off">Normal layers: no extra time, flat faces show one filament</option>
+</select>
+<p class="hint">Blending alternates thin layers until your eye reads them as one
+colour, so a full cycle has to fit inside one normal layer. That is what doubles
+the time. Coarser bands print faster and show more on flat tops; curved and
+textured surfaces hide them well.</p>
+</div></div>
 
 <div class="card" id="csup"><div class="step"><div class="num">5</div><h2>Supports</h2></div>
 <label class="tog"><input type="checkbox" id="sup"><span>Work out where supports are
@@ -638,6 +650,7 @@ document.getElementById('go').onclick=()=>{const g=document.getElementById('go')
  document.getElementById('out').textContent='';
  api('/api/convert',{files:S.files,printer:S.printer,mode:S.mode,
    spectrum:S.spectrum,colour:S.colour,sets:collectSets(),
+   spectrumStep:(S.spectrum?(document.getElementById('fsstep').value||null):null),
    supports:document.getElementById('sup').checked?'auto':null,
    units:S.units||null,up:S.up||null,
    orient:S.orient||null}).then(r=>{
@@ -782,6 +795,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
                         args += ['--spectrum-colour', str(body['colour'])]
                 if body.get('supports'):
                     args += ['--supports', str(body['supports'])]
+                if body.get('spectrumStep'):
+                    args += ['--spectrum-step', str(body['spectrumStep'])]
                 if body.get('units'):
                     args += ['--units', str(body['units'])]
                 if body.get('up'):

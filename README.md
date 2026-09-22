@@ -158,6 +158,13 @@ prime tower uses about 0.11g per tool change.
 `--colour-preview` answers this for your actual model before you convert
 anything, naming each colour it cannot reach and what it would use instead.
 
+**Blending roughly doubles print time**, and that is not overhead you can tune
+away: a full colour cycle has to fit inside one normal layer for your eye to
+read it as one colour, so the layers halve. `--spectrum-step` trades that back.
+On a real plate: 4 hours at the default, about 2h30 at `0.16`, and the same as
+an unblended print at `off`, where flat faces show one filament instead. Curved
+and textured surfaces hide coarser bands well; flat tops do not.
+
 **[Full colour and painting guide](docs/COLOUR.md)** covers the rest.
 
 ## Bringing in an OBJ or an STL
