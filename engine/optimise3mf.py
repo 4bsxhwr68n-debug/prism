@@ -237,9 +237,27 @@ def mesh_health(V, T):
     boundary = sum(1 for n in edges.values() if n == 1)
     nonmanifold = sum(1 for n in edges.values() if n > 2)
     shells = len({find(v) for v in used})
+
+    # And now WITHOUT welding, which is what a slicer actually reads. A file
+    # can be a perfectly sound solid and still store every triangle's corners
+    # separately, and then every edge belongs to one triangle and the slicer
+    # reports the lot as non-manifold. Measuring only the welded form calls
+    # such a file watertight, which is true of the shape and useless to the
+    # person whose slicer is refusing it.
+    raw = {}
+    for t in T:
+        a, b, c = t
+        if a == b or b == c or a == c:
+            continue
+        for e in ((a, b), (b, c), (c, a)):
+            k = (min(e), max(e))
+            raw[k] = raw.get(k, 0) + 1
+    stored_bad = sum(1 for n in raw.values() if n != 2)
     return {'triangles': len(T), 'boundary': boundary,
             'nonmanifold': nonmanifold, 'shells': shells,
             'degenerate': degenerate,
+            'stored_bad': stored_bad,
+            'unwelded': stored_bad > 0 and boundary == 0 and nonmanifold == 0,
             'watertight': boundary == 0 and nonmanifold == 0}
 
 
@@ -252,6 +270,12 @@ def health_lines(h):
     not a fault: a model of loose parts is supposed to have them."""
     out = []
     n = max(1, h['triangles'])
+    if h.get('unwelded'):
+        out.append("your slicer will report %d non-manifold edges. The shape "
+                   "is sound: its corners are stored separately, so no triangle "
+                   "is joined to its neighbour. Prism merges these when it "
+                   "imports an OBJ or STL, so re-importing the original mesh "
+                   "clears it" % h['stored_bad'])
     if h['nonmanifold']:
         scale = 'a few' if h['nonmanifold'] * 10000 < n else 'widespread'
         out.append(f"{h['nonmanifold']} edge(s) where the surface meets itself "
@@ -284,7 +308,7 @@ def parse_health(tmp, cache=None):
     src = open(root_path, encoding='utf-8').read()
     for objid, _tr in plate_items(src):
         agg = {'triangles': 0, 'boundary': 0, 'nonmanifold': 0,
-               'shells': 0, 'degenerate': 0}
+               'shells': 0, 'degenerate': 0, 'stored_bad': 0}
         for (pth, oid, _ctr) in (rcomps.get(objid) or [(None, objid, '')]):
             if pth:
                 o2, _ = _parse_model(os.path.join(tmp, pth.lstrip('/')), cache)
@@ -303,6 +327,7 @@ def parse_health(tmp, cache=None):
                 agg[k] += h[k]
         if agg['triangles']:
             agg['watertight'] = agg['boundary'] == 0 and agg['nonmanifold'] == 0
+            agg['unwelded'] = agg['stored_bad'] > 0 and agg['watertight']
             out[objid] = agg
     return out
 

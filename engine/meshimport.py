@@ -31,6 +31,9 @@ TOO_SMALL_MM = 5.0
 # Above this it is larger than any consumer plate by a wide margin, so the
 # units are more likely wrong than the model genuinely enormous.
 TOO_LARGE_MM = 2000.0
+# Decimal places at which two vertices are the same vertex. 1e-5 mm is far
+# below any printer's resolution and well above float noise from a transform.
+WELD_PLACES = 5
 
 
 def _tris_from_faces(verts, faces):
@@ -156,6 +159,52 @@ def parse_stl(path):
             elif parts and parts[0] == 'endfacet':
                 cur = []
     return verts, tris
+
+
+def weld(verts, tris, places=WELD_PLACES):
+    """Merge vertices that sit at the same point, renumbering the triangles.
+
+    Not a nicety. A mesh whose triangles share no vertices has every edge
+    belonging to exactly one triangle, which is the definition of non-manifold,
+    and a slicer says so: "40524 non-manifold edges" on a 13508 triangle model
+    is three edges per triangle and none of them joined. STL cannot express
+    sharing at all, and plenty of OBJ exporters do not bother, so this is the
+    normal state of an imported mesh rather than a damaged one."""
+    canon, out, remap = {}, [], []
+    for v in verts:
+        k = (round(v[0], places), round(v[1], places), round(v[2], places))
+        j = canon.get(k)
+        if j is None:
+            j = canon[k] = len(out)
+            out.append(v)
+        remap.append(j)
+    kept = []
+    for t in tris:
+        a, b, c = remap[t[0]], remap[t[1]], remap[t[2]]
+        # A triangle whose corners collapsed onto each other has no area and
+        # no meaning, and slicers report those separately as their own fault.
+        if a != b and b != c and a != c:
+            kept.append((a, b, c))
+    return out, kept
+
+
+def weld_tagged(verts, tris, tags):
+    """weld(), keeping each triangle's material tag attached to it."""
+    canon, out, remap = {}, [], []
+    for v in verts:
+        k = (round(v[0], WELD_PLACES), round(v[1], WELD_PLACES),
+             round(v[2], WELD_PLACES))
+        j = canon.get(k)
+        if j is None:
+            j = canon[k] = len(out)
+            out.append(v)
+        remap.append(j)
+    kept, kept_tags = [], []
+    for t, m in zip(tris, tags):
+        a, b, c = remap[t[0]], remap[t[1]], remap[t[2]]
+        if a != b and b != c and a != c:
+            kept.append((a, b, c)); kept_tags.append(m)
+    return out, kept, kept_tags
 
 
 def bbox(verts):
@@ -296,6 +345,15 @@ def read_mesh_file(path):
     warn = []
     if ext == '.obj':
         verts, tris, tri_mtl, mtllib = parse_obj(path)
+        before, before_t = len(verts), len(tris)
+        verts, tris, tri_mtl = weld_tagged(verts, tris, tri_mtl)
+        if before_t != len(tris):
+            warn.append('%d triangle(s) had no area once merged and were left out'
+                        % (before_t - len(tris)))
+        if before != len(verts):
+            warn.append('%d vertices merged to %d: the file stored them '
+                        'separately, which every slicer reads as non-manifold'
+                        % (before, len(verts)))
         colours = {}
         if mtllib:
             mpath = os.path.join(os.path.dirname(path), mtllib)
