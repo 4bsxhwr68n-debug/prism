@@ -188,6 +188,19 @@ def weld(verts, tris, places=WELD_PLACES):
     return out, kept
 
 
+def bad_edges(tris):
+    """Edges not shared by exactly two triangles, which is what a slicer counts
+    and calls non-manifold."""
+    e = {}
+    for a, b, c in tris:
+        if a == b or b == c or a == c:
+            continue
+        for x, y in ((a, b), (b, c), (c, a)):
+            k = (x, y) if x < y else (y, x)
+            e[k] = e.get(k, 0) + 1
+    return sum(1 for n in e.values() if n != 2)
+
+
 def weld_tagged(verts, tris, tags):
     """weld(), keeping each triangle's material tag attached to it."""
     canon, out, remap = {}, [], []
@@ -345,8 +358,20 @@ def read_mesh_file(path):
     warn = []
     if ext == '.obj':
         verts, tris, tri_mtl, mtllib = parse_obj(path)
+        # Weld ONLY if it helps. Merging vertices that an author deliberately
+        # kept apart, where two surfaces touch without being joined, creates a
+        # non-manifold junction that was not there. Measured on real files,
+        # welding an already sound mesh took one from 13 bad edges to 21. So
+        # try it and keep the better result, rather than assuming.
         before, before_t = len(verts), len(tris)
-        verts, tris, tri_mtl = weld_tagged(verts, tris, tri_mtl)
+        cand_v, cand_t, cand_m = weld_tagged(verts, tris, tri_mtl)
+        if bad_edges(cand_t) <= bad_edges(tris):
+            verts, tris, tri_mtl = cand_v, cand_t, cand_m
+        else:
+            warn.append('left as the author stored it: merging its vertices '
+                        'would have joined surfaces that are meant to be '
+                        'separate')
+            before, before_t = len(verts), len(tris)
         if before_t != len(tris):
             warn.append('%d triangle(s) had no area once merged and were left out'
                         % (before_t - len(tris)))
