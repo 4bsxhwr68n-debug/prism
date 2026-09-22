@@ -1941,6 +1941,41 @@ def inject_object_layer_height(xml_text, objid, value):
     return xml_text[:m.start(1)] + block + xml_text[m.end(1):], True
 
 
+def mesh_info(paths):
+    """Measurements a caller needs to ask the two questions itself.
+
+    The window cannot answer a terminal prompt, so it needs the same facts the
+    prompt is built from and asks in its own way. Same numbers, one source."""
+    out = []
+    for path in paths:
+        try:
+            objects, colours, warns = meshimport.read_mesh_file(path)
+        except Exception as e:
+            out.append({'file': os.path.basename(path),
+                        'error': '%s: %s' % (type(e).__name__, e)})
+            continue
+        allv = [v for (vs, _t, _c) in objects for v in vs]
+        if not allv:
+            out.append({'file': os.path.basename(path),
+                        'error': 'no geometry found in it'})
+            continue
+        turned = meshimport.to_z_up(allv)
+        out.append({
+            'file': os.path.basename(path),
+            'path': path,
+            'materials': len(objects),
+            'colours': list(colours.values()),
+            'warnings': warns,
+            'units': [{'unit': c['unit'], 'dims': [round(x, 1) for x in c['dims']],
+                       'plausible': c['plausible']}
+                      for c in meshimport.unit_candidates(allv)],
+            'looks_y_up': meshimport.looks_y_up(allv),
+            'as_is': [round(x, 2) for x in meshimport.dims(allv)],
+            'turned': [round(x, 2) for x in meshimport.dims(turned)],
+        })
+    return out
+
+
 # ------------------------- importing OBJ and STL -------------------------
 MESH_EXTS = ('.obj', '.stl')
 
@@ -2279,6 +2314,8 @@ def main():
                          "(default: half the layer height, which hides flat-face banding)")
     ap.add_argument('--spectrum-list', action='store_true',
                     help='print every colour this printer can make, then exit')
+    ap.add_argument('--mesh-info', action='store_true',
+                    help='measurements of an .obj or .stl, as JSON')
     ap.add_argument('--units', choices=sorted(meshimport.MM_PER),
                     help='units an imported .obj or .stl was drawn in')
     ap.add_argument('--up', choices=('z', 'y'),
@@ -2358,6 +2395,9 @@ def main():
             print("  %-30s %s" % (k, ', '.join(sorted(enums[k]))))
         print("\nanything else in the profile: --set KEY=VALUE  (%d keys)"
               % len(tpl))
+        return
+    if a.mesh_info:
+        print(json.dumps(mesh_info([os.path.abspath(f) for f in a.files])))
         return
     if a.fix:
         rec = load_printer(a.printer) if a.printer else None

@@ -181,6 +181,9 @@ wrong.
         m      20000.0 x  15000.0 x  40000.0mm   (not a printable size)
       Which did its author work in?
 
+The window asks the same two, as buttons showing what each answer would give
+you in millimetres, and will not let you convert until both are answered.
+
 An OBJ or STL is bare numbers, so the same file is a trinket or a monument
 depending on what its author had in mind. And printing is Z up while most
 modelling tools export Y up, which if taken wrong lays the model on its side

@@ -52,11 +52,11 @@ def engine(args, timeout=900):
 # message rather than a button that silently does nothing.
 LINUX_PICKERS = [
     ['zenity', '--file-selection', '--multiple', '--separator=\n',
-     '--title=Choose 3MF files', '--file-filter=3MF files | *.3mf *.3MF'],
-    ['kdialog', '--getopenfilename', '.', '*.3mf', '--multiple',
+     '--title=Choose files', '--file-filter=Models | *.3mf *.3MF *.obj *.OBJ *.stl *.STL'],
+    ['kdialog', '--getopenfilename', '.', '*.3mf *.obj *.stl', '--multiple',
      '--separate-output'],
     ['yad', '--file', '--multiple', '--separator=\n',
-     '--file-filter=3MF files | *.3mf'],
+     '--file-filter=Models | *.3mf *.obj *.stl'],
 ]
 
 
@@ -87,7 +87,7 @@ def pick_files():
         return [l for l in p.stdout.splitlines() if l.strip()]
     ps = ("Add-Type -AssemblyName System.Windows.Forms;"
           "$d = New-Object System.Windows.Forms.OpenFileDialog;"
-          "$d.Filter = '3MF files (*.3mf)|*.3mf';"
+          "$d.Filter = 'Models (*.3mf;*.obj;*.stl)|*.3mf;*.obj;*.stl';"
           "$d.Multiselect = $true;"
           "if ($d.ShowDialog() -eq 'OK') { $d.FileNames -join [Environment]::NewLine }")
     p = subprocess.run(['powershell', '-NoProfile', '-STA', '-Command', ps],
@@ -328,6 +328,12 @@ border-radius:50%;animation:s .7s linear infinite;display:inline-block;vertical-
 <span class="hint" id="filehint" style="margin:0">Nothing chosen yet</span></div>
 <div class="files" id="files"></div></div>
 
+<div class="card off" id="cimp"><div class="step"><div class="num">!</div><h2>About this model</h2></div>
+<p class="hint">An OBJ or STL carries shape and nothing else. These two answers
+are not in the file, and both look right when they are wrong, so Prism will not
+guess them.</p>
+<div id="impbody"></div></div>
+
 <div class="card off" id="c2"><div class="step"><div class="num">2</div><h2>Printer</h2></div>
 <select id="printer"></select></div>
 
@@ -524,7 +530,46 @@ document.getElementById('pick').onclick=()=>api('/api/pick',{}).then(r=>{
  if(!r.files.length)return; S.files=r.files;
  document.getElementById('filehint').textContent=r.files.length+' file'+(r.files.length>1?'s':'');
  document.getElementById('files').innerHTML=r.files.map(f=>'<div>'+f.split('/').pop().split('\\').pop()+'</div>').join('');
- document.getElementById('c2').classList.remove('off');refresh();analyse();if(S.spectrum)probe();});
+ document.getElementById('c2').classList.remove('off');meshCheck();refresh();analyse();if(S.spectrum)probe();});
+
+/* An OBJ or STL needs two answers the file does not contain. Ask here, the
+   same two the command line prompts for, from the same measurements. */
+function meshCheck(){
+ const mesh=S.files.filter(f=>/\.(obj|stl)$/i.test(f));
+ const card=document.getElementById('cimp'), body=document.getElementById('impbody');
+ S.units=null; S.up=null;
+ if(!mesh.length){card.classList.add('off'); body.innerHTML=''; return;}
+ card.classList.remove('off');
+ body.innerHTML='<span class="spin"></span> measuring…';
+ api('/api/meshinfo',{files:mesh}).then(r=>{
+  const info=(r.info||[]);
+  if(!info.length){body.textContent=r.error||'could not read it';return;}
+  const i=info[0], bad=info.find(x=>x.error);
+  if(bad){body.innerHTML='<span class="bad">'+bad.file+': '+bad.error+'</span>';return;}
+  const dim=d=>d.map(n=>Math.round(n)).join(' x ')+'mm';
+  let h='';
+  h+='<label>What units was it drawn in?</label><div class="row" id="urow">';
+  i.units.forEach(u=>{h+='<button class="chip" data-u="'+u.unit+'">'+u.unit+
+     ' &middot; '+dim(u.dims)+(u.plausible?'':' (not printable)')+'</button>';});
+  h+='</div>';
+  h+='<label>Which way up is it?</label><div class="row" id="uprow">'+
+     '<button class="chip" data-up="z">As it is &middot; '+dim(i.as_is)+'</button>'+
+     '<button class="chip" data-up="y">Turn it Z up &middot; '+dim(i.turned)+'</button></div>';
+  if(i.looks_y_up)h+='<p class="hint">It is taller across Y than Z, which usually means a Y up export.</p>';
+  if(i.materials>1)h+='<p class="hint">'+i.materials+' materials, kept as separate objects so their colours carry over.</p>';
+  (i.warnings||[]).forEach(w=>{h+='<p class="hint">'+w+'</p>';});
+  body.innerHTML=h;
+  /* Nothing is preselected. A default here would be a guess wearing a tick. */
+  body.querySelectorAll('[data-u]').forEach(b=>b.onclick=()=>{
+    S.units=b.dataset.u;
+    body.querySelectorAll('[data-u]').forEach(x=>x.classList.remove('sel'));
+    b.classList.add('sel');refresh();});
+  body.querySelectorAll('[data-up]').forEach(b=>b.onclick=()=>{
+    S.up=b.dataset.up;
+    body.querySelectorAll('[data-up]').forEach(x=>x.classList.remove('sel'));
+    b.classList.add('sel');refresh();});
+ }).catch(()=>{body.textContent='could not measure it';});
+}
 
 function analyse(){if(!S.files.length||!S.printer)return;
  document.getElementById('c3').classList.remove('off');
@@ -533,7 +578,15 @@ function analyse(){if(!S.files.length||!S.printer)return;
    orient:!!S.orient}).then(r=>{
   document.getElementById('report').textContent=r.text.trim()||'no analysis available';});}
 
-function refresh(){document.getElementById('go').disabled=!(S.files.length&&S.printer);}
+function refresh(){
+ const needMesh=S.files.some(f=>/\.(obj|stl)$/i.test(f));
+ const ready=S.files.length&&S.printer&&(!needMesh||(S.units&&S.up));
+ document.getElementById('go').disabled=!ready;
+ const gh=document.getElementById('gohint');
+ if(needMesh&&S.files.length&&S.printer&&!(S.units&&S.up))
+   gh.textContent='Answer the two questions above first.';
+ else if(gh.textContent==='Answer the two questions above first.')gh.textContent='';
+}
 
 document.getElementById('go').onclick=()=>{const g=document.getElementById('go');
  g.disabled=true;document.getElementById('gohint').innerHTML='<span class="spin"></span> converting…';
@@ -541,6 +594,7 @@ document.getElementById('go').onclick=()=>{const g=document.getElementById('go')
  api('/api/convert',{files:S.files,printer:S.printer,mode:S.mode,
    spectrum:S.spectrum,colour:S.colour,sets:collectSets(),
    supports:document.getElementById('sup').checked?'auto':null,
+   units:S.units||null,up:S.up||null,
    orient:S.orient||null}).then(r=>{
   document.getElementById('gohint').textContent='';
   const o=document.getElementById('out');o.innerHTML='';
@@ -640,6 +694,12 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     rargs.append('--orient')
                 rc, out, err = engine(rargs + files)
                 self._send(json.dumps({'text': out or err}))
+            elif path == '/api/meshinfo':
+                rc, out, err = engine(['--mesh-info'] + files)
+                try:
+                    self._send(json.dumps({'info': json.loads(out or '[]')}))
+                except ValueError:
+                    self._send(json.dumps({'info': [], 'error': err or out}))
             elif path == '/api/explain':
                 args = ['--explain', body.get('term', '')]
                 if body.get('printer'):
@@ -673,6 +733,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
                         args += ['--spectrum-colour', str(body['colour'])]
                 if body.get('supports'):
                     args += ['--supports', str(body['supports'])]
+                if body.get('units'):
+                    args += ['--units', str(body['units'])]
+                if body.get('up'):
+                    args += ['--up', str(body['up'])]
                 if body.get('orient') == 'apply':
                     args.append('--orient-apply')
                 elif body.get('orient'):
