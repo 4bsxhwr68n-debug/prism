@@ -1,0 +1,26 @@
+{
+ "bambu": {
+  "from": "Filament+Rack+-+Mega+Pack.3mf",
+  "hand_modified": 6,
+  "printer": "Bambu Lab P1S 0.4 nozzle",
+  "process": "0.20mm Standard @BBL X1C",
+  "slicer_version": "02.01.01.52",
+  "verified_stock": false
+ },
+ "cp": {
+  "from": "newprof-creality.3mf",
+  "hand_modified": 0,
+  "printer": "Creality K2 0.4 nozzle",
+  "process": "0.20mm Standard @Creality K2 0.4 nozzle",
+  "slicer_version": "7.2.2.5483",
+  "verified_stock": true
+ },
+ "snapmaker": {
+  "from": "newproj.3mf",
+  "hand_modified": 0,
+  "printer": "Snapmaker U1 (0.4 nozzle)",
+  "process": "0.20 Standard @Snapmaker U1 (0.4 nozzle)",
+  "slicer_version": "2.3.6",
+  "verified_stock": true
+ }
+}

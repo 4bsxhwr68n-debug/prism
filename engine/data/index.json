@@ -1,1 +1,127 @@
-{"printers": {"k2": {"label": "Creality K2", "dialect": "cp"}, "k2plus": {"label": "Creality K2 Plus", "dialect": "cp"}, "k2pro": {"label": "Creality K2 Pro", "dialect": "cp"}, "k1c": {"label": "Creality K1C", "dialect": "cp"}, "k1max": {"label": "Creality K1 Max", "dialect": "cp"}, "k1se": {"label": "Creality K1 SE", "dialect": "cp"}, "ender3v3": {"label": "Creality Ender-3 V3", "dialect": "cp"}, "ender3v3ke": {"label": "Creality Ender-3 V3 KE", "dialect": "cp"}, "hi": {"label": "Creality Hi", "dialect": "cp"}, "u1": {"label": "Snapmaker U1", "spectrum": "Full Spectrum", "dialect": "snapmaker"}, "x1c": {"label": "Bambu Lab X1 Carbon", "dialect": "bambu"}, "p1s": {"label": "Bambu Lab P1S", "dialect": "bambu"}, "p1p": {"label": "Bambu Lab P1P", "dialect": "bambu"}, "a1": {"label": "Bambu Lab A1", "dialect": "bambu"}, "a1mini": {"label": "Bambu Lab A1 mini", "dialect": "bambu"}, "x1e": {"label": "Bambu Lab X1E", "dialect": "bambu"}, "mk4s": {"label": "Prusa MK4S", "dialect": "orca"}, "coreone": {"label": "Prusa CORE One", "dialect": "orca"}, "neptune4pro": {"label": "Elegoo Neptune 4 Pro", "dialect": "orca"}, "voron24-300": {"label": "Voron 2.4 300", "dialect": "orca"}, "qidiq1pro": {"label": "Qidi Q1 Pro", "dialect": "orca"}, "sv06": {"label": "Sovol SV06", "dialect": "orca"}, "kobra2": {"label": "Anycubic Kobra 2", "dialect": "orca"}, "ad5x": {"label": "Flashforge AD5X", "dialect": "orca"}}, "order": ["k2", "k2plus", "k2pro", "k1c", "k1max", "k1se", "ender3v3", "ender3v3ke", "hi", "u1", "x1c", "p1s", "p1p", "a1", "a1mini", "x1e", "mk4s", "coreone", "neptune4pro", "voron24-300", "qidiq1pro", "sv06", "kobra2", "ad5x"]}
+{
+ "printers": {
+  "k2": {
+   "label": "Creality K2",
+   "dialect": "cp"
+  },
+  "k2plus": {
+   "label": "Creality K2 Plus",
+   "dialect": "cp"
+  },
+  "k2pro": {
+   "label": "Creality K2 Pro",
+   "dialect": "cp"
+  },
+  "k1c": {
+   "label": "Creality K1C",
+   "dialect": "cp"
+  },
+  "k1max": {
+   "label": "Creality K1 Max",
+   "dialect": "cp"
+  },
+  "k1se": {
+   "label": "Creality K1 SE",
+   "dialect": "cp"
+  },
+  "ender3v3": {
+   "label": "Creality Ender-3 V3",
+   "dialect": "cp"
+  },
+  "ender3v3ke": {
+   "label": "Creality Ender-3 V3 KE",
+   "dialect": "cp"
+  },
+  "hi": {
+   "label": "Creality Hi",
+   "dialect": "cp"
+  },
+  "u1": {
+   "label": "Snapmaker U1",
+   "dialect": "snapmaker",
+   "spectrum": "Full Spectrum"
+  },
+  "x1c": {
+   "label": "Bambu Lab X1 Carbon",
+   "dialect": "bambu"
+  },
+  "p1s": {
+   "label": "Bambu Lab P1S",
+   "dialect": "bambu"
+  },
+  "p1p": {
+   "label": "Bambu Lab P1P",
+   "dialect": "bambu"
+  },
+  "a1": {
+   "label": "Bambu Lab A1",
+   "dialect": "bambu"
+  },
+  "a1mini": {
+   "label": "Bambu Lab A1 mini",
+   "dialect": "bambu"
+  },
+  "x1e": {
+   "label": "Bambu Lab X1E",
+   "dialect": "bambu"
+  },
+  "mk4s": {
+   "label": "Prusa MK4S",
+   "dialect": "orca"
+  },
+  "coreone": {
+   "label": "Prusa CORE One",
+   "dialect": "orca"
+  },
+  "neptune4pro": {
+   "label": "Elegoo Neptune 4 Pro",
+   "dialect": "orca"
+  },
+  "voron24-300": {
+   "label": "Voron 2.4 300",
+   "dialect": "orca"
+  },
+  "qidiq1pro": {
+   "label": "Qidi Q1 Pro",
+   "dialect": "orca"
+  },
+  "sv06": {
+   "label": "Sovol SV06",
+   "dialect": "orca"
+  },
+  "kobra2": {
+   "label": "Anycubic Kobra 2",
+   "dialect": "orca"
+  },
+  "ad5x": {
+   "label": "Flashforge AD5X",
+   "dialect": "orca"
+  }
+ },
+ "order": [
+  "k2",
+  "k2plus",
+  "k2pro",
+  "k1c",
+  "k1max",
+  "k1se",
+  "ender3v3",
+  "ender3v3ke",
+  "hi",
+  "u1",
+  "x1c",
+  "p1s",
+  "p1p",
+  "a1",
+  "a1mini",
+  "x1e",
+  "mk4s",
+  "coreone",
+  "neptune4pro",
+  "voron24-300",
+  "qidiq1pro",
+  "sv06",
+  "kobra2",
+  "ad5x"
+ ]
+}

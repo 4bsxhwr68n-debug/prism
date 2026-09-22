@@ -212,14 +212,53 @@ def pick_filaments(root, vendor, machine):
 
 # ---------------- dialect templates + stamps
 def cp_template():
-    return json.loads(zipfile.ZipFile(os.path.expanduser('~/Downloads/creatful_pink.3mf'))
-                      .read('Metadata/project_settings.config'))
+    return _seed('cp')
+SEEDS = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'seeds')
+
+
+def _seed(name):
+    """A slicer's stock settings, from a seed committed to this repo.
+
+    These used to be read from named .3mf files in ~/Downloads, which meant the
+    factory defaults for 24 printers were three projects that happened to be in
+    one person's downloads folder. The Snapmaker seed was a CUSTOM preset
+    tuned for a lamp: "0.12 Senna Lamp @Snapmaker U1". Every U1 conversion
+    inherited its acceleration, its scarf seams and its cooling, while the
+    output was labelled "0.20 Standard", so the file said one thing and
+    contained another. Prints took about twice as long as they should.
+
+    A seed must therefore be a project saved with a STOCK process preset and
+    nothing altered, and this refuses anything else."""
+    path = os.path.join(SEEDS, name + '.json')
+    with open(path, encoding='utf-8') as fh:
+        d = json.load(fh)
+    proc = str(d.get('print_settings_id') or '')
+    mod = d.get('different_settings_to_system')
+    first = (mod[0] if isinstance(mod, list) and mod else '')
+    nmod = len([x for x in first.split(';') if x])
+    # A CUSTOM preset is the fatal case, and the one that happened: a seed
+    # named for somebody's lamp supplied the factory defaults for a printer.
+    # The output then claimed a stock preset it did not contain.
+    if 'Standard' not in proc and 'Quality' not in proc:
+        raise SystemExit(
+            'seed %s uses %r.\n'
+            'That is a custom preset, so every printer baked from it would '
+            'inherit its settings while claiming to be stock. Save a project '
+            'with the stock Standard or Quality process and nothing altered.'
+            % (name, proc))
+    # Hand-modified settings are worth saying out loud but are not fatal:
+    # measured against the vendor profiles they are small, and refusing here
+    # would block a bake over a brim shape.
+    if nmod:
+        print('  NOTE: seed %s carries %d hand-modified setting(s): %s'
+              % (name, nmod, first.replace(';', ', ')[:90]))
+    return d
+
+
 def orca_template():
-    return json.loads(zipfile.ZipFile(os.path.expanduser('~/Downloads/Senna_helmet_lamp-U1-optimised.3mf'))
-                      .read('Metadata/project_settings.config'))
+    return _seed('snapmaker')
 def bambu_template():
-    t=json.loads(zipfile.ZipFile(os.path.expanduser('~/Downloads/Filament+Rack+-+Mega+Pack.3mf'))
-                 .read('Metadata/project_settings.config'))
+    t=_seed('bambu')
     # widen to 4 filament slots (AMS-sized); rack project has 2
     n=len(t['filament_settings_id'])
     if n<4:
@@ -252,13 +291,13 @@ def harvest_enums(bins):
     return out
 
 DIALECTS={
- 'cp':       {'template':cp_template,   'bins':[CP_BIN],       'project_version':'7.1.0.4414',
+ 'cp':       {'template':cp_template,   'bins':[CP_BIN],       'project_version':'7.2.2.5483',
               'app_stamp':None,
               'slice_info':'<?xml version="1.0" encoding="UTF-8"?>\n<config>\n  <header>\n    <header_item key="X-CX-Client-Type" value="creality_print"/>\n    <header_item key="X-CX-Client-Version" value="07.01.00.4414"/>\n  </header>\n</config>\n'},
- 'snapmaker':{'template':orca_template, 'bins':[SM_BIN],       'project_version':'2.3.5',
+ 'snapmaker':{'template':orca_template, 'bins':[SM_BIN],       'project_version':'2.3.6',
               'app_stamp':'BambuStudio-2.3.5',
               'slice_info':'<?xml version="1.0" encoding="UTF-8"?>\n<config>\n  <header>\n    <header_item key="X-BBL-Client-Type" value="slicer"/>\n    <header_item key="X-BBL-Client-Version" value=""/>\n  </header>\n</config>\n'},
- 'orca':     {'template':orca_template, 'bins':[SM_BIN],       'project_version':'2.3.5',
+ 'orca':     {'template':orca_template, 'bins':[SM_BIN],       'project_version':'2.3.6',
               'app_stamp':'BambuStudio-2.2.0',
               'slice_info':'<?xml version="1.0" encoding="UTF-8"?>\n<config>\n  <header>\n    <header_item key="X-BBL-Client-Type" value="slicer"/>\n    <header_item key="X-BBL-Client-Version" value=""/>\n  </header>\n</config>\n'},
  'bambu':    {'template':bambu_template,'bins':[CP_BIN,SM_BIN],'project_version':'02.01.01.52',

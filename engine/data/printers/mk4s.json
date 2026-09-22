@@ -1,1 +1,1894 @@
-{"label": "Prusa MK4S", "dialect": "orca", "printer_id": "Prusa MK4S 0.4 nozzle", "process_id": "0.20mm Quality @MK3S", "bed": [250, 210, 220], "project_version": "2.3.5", "app_stamp": "BambuStudio-2.2.0", "slice_info": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<config>\n  <header>\n    <header_item key=\"X-BBL-Client-Type\" value=\"slicer\"/>\n    <header_item key=\"X-BBL-Client-Version\" value=\"\"/>\n  </header>\n</config>\n", "enums": {"sparse_infill_pattern": ["3dhoneycomb", "adaptivecubic", "alignedrectilinear", "archimedeanchords", "concentric", "crosshatch", "cubic", "grid", "gyroid", "hilbertcurve", "honeycomb", "lightning", "line", "lockedzag", "octagramspiral", "quartercubic", "supportcubic", "tri-hexagon", "triangles", "zig-zag", "zigzag"], "brim_type": ["auto_brim", "brim_ears", "inner_only", "no_brim", "outer_and_inner", "outer_only", "painted"], "support_type": ["hybrid(auto)", "normal", "normal(auto)", "normal(manual)", "tree", "tree(auto)", "tree(manual)"], "support_style": ["default", "grid", "organic", "snug", "tree_hybrid", "tree_slim", "tree_strong"], "seam_position": ["aligned", "back", "nearest", "random", "rear"], "wall_generator": ["arachne", "classic"], "ironing_type": ["no ironing", "solid", "top", "topmost"]}, "default_colour": "#000000", "template": {"accel_to_decel_enable": "1", "accel_to_decel_factor": "50%", "activate_air_filtration": ["0", "0", "0", "0"], "activate_chamber_temp_control": ["0", "0", "0", "0"], "adaptive_bed_mesh_margin": "0", "adaptive_pressure_advance": ["0", "0", "0", "0"], "adaptive_pressure_advance_bridges": ["0", "0", "0", "0"], "adaptive_pressure_advance_model": ["0,0,0\n0,0,0", "0,0,0\n0,0,0", "0,0,0\n0,0,0", "0,0,0\n0,0,0"], "adaptive_pressure_advance_overhangs": ["0", "0", "0", "0"], "additional_cooling_fan_speed": ["70", "70", "70", "70"], "align_infill_direction_to_model": "0", "alternate_extra_wall": "0", "auxiliary_fan": "1", "bbl_calib_mark_logo": "1", "bbl_use_printhost": "0", "bed_custom_model": "", "bed_custom_texture": "", "bed_exclude_area": ["0x0"], "bed_mesh_max": "99999,99999", "bed_mesh_min": "-99999,-99999", "bed_mesh_probe_distance": "50,50", "before_layer_change_gcode": ";BEFORE_LAYER_CHANGE\nG92 E0.0\n;[layer_z]\nM201 X{interpolate_table(extruded_weight_total, (0,4000), (1400,2500), (10000,2500))} Y{interpolate_table(extruded_weight_total, (0,4000), (1400,2500), (10000,2500))}\n", "best_object_pos": "0.5,0.5", "bottom_shell_layers": "4", "bottom_shell_thickness": "0.5", "bottom_solid_infill_flow_ratio": "1", "bottom_surface_density": "100%", "bottom_surface_pattern": "monotonic", "bridge_acceleration": "1000", "bridge_angle": "0", "bridge_density": "80%", "bridge_flow": "0.95", "bridge_no_support": "0", "bridge_speed": "25", "brim_ears_detection_length": "1", "brim_ears_max_angle": "125", "brim_object_gap": "0.1", "brim_type": "outer_only", "brim_width": "0", "calib_flowrate_topinfill_special_order": "0", "chamber_temperature": ["0", "0", "0", "0"], "change_extrusion_role_gcode": "", "change_filament_gcode": "", "close_fan_the_first_x_layers": ["1", "1", "1", "1"], "complete_print_exhaust_fan_speed": ["70", "70", "70", "70"], "cool_plate_temp": ["35", "35", "35", "35"], "cool_plate_temp_initial_layer": ["35", "35", "35", "35"], "cooling_tube_length": "5", "cooling_tube_retraction": "91.5", "counterbore_hole_bridging": "none", "curr_bed_type": "Textured PEI Plate", "default_acceleration": "1000", "default_bed_type": "Textured PEI Plate", "default_filament_colour": ["#FF8000", "#FF8000", "#FF8000", "#FF8000"], "default_filament_profile": ["Snapmaker PLA"], "default_jerk": "0", "default_junction_deviation": "0", "default_print_profile": "0.20 Standard @Snapmaker U1 (0.4 nozzle)", "delta_temperature": "0", "deretraction_speed": ["25", "25", "25", "25"], "detect_narrow_internal_solid_infill": "1", "detect_overhang_wall": "1", "detect_thin_wall": "0", "different_settings_to_system": ["", "filament_cost", "filament_cost", "filament_cost", "filament_cost", ""], "disable_m73": "0", "dithering_local_z_direct_multicolor": "0", "dithering_local_z_infill": "0", "dithering_local_z_mode": "0", "dithering_local_z_whole_objects": "0", "dithering_step_painted_zones_only": "1", "dithering_z_step_size": "0", "dont_filter_internal_bridges": "disabled", "dont_slow_down_outer_wall": ["0", "0", "0", "0"], "draft_shield": "disabled", "during_print_exhaust_fan_speed": ["70", "70", "70", "70"], "elefant_foot_compensation": "0.15", "elefant_foot_compensation_layers": "1", "emit_machine_limits_to_gcode": "1", "enable_arc_fitting": "0", "enable_change_pressure_when_wiping": "1", "enable_extra_bridge_layer": "disabled", "enable_filament_ramming": "0", "enable_long_retraction_when_cut": "0", "enable_overhang_bridge_fan": ["1", "1", "1", "1"], "enable_overhang_speed": "1", "enable_pressure_advance": ["0", "0", "0", "0"], "enable_prime_tower": "1", "enable_support": "0", "enforce_support_layers": "0", "eng_plate_temp": ["0", "0", "0", "0"], "eng_plate_temp_initial_layer": ["0", "0", "0", "0"], "ensure_vertical_shell_thickness": "ensure_all", "exclude_object": "0", "extra_loading_move": "-2", "extra_perimeters_on_overhangs": "0", "extra_solid_infills": "", "extruder_clearance_height_to_lid": "220", "extruder_clearance_height_to_rod": "14", "extruder_clearance_radius": "45", "extruder_colour": ["#018001"], "extruder_offset": ["0x0"], "extrusion_rate_smoothing_external_perimeter_only": "0", "fan_cooling_layer_time": ["17", "17", "17", "17"], "fan_kickstart": "0", "fan_max_speed": ["100", "100", "100", "100"], "fan_min_speed": ["70", "70", "70", "70"], "fan_speedup_overhangs": "1", "fan_speedup_time": "0", "filament_colour": ["#FFFFFFFF", "#FFFFFFFF", "#FFFFFFFF", "#FFFFFFFF"], "filament_colour_mode": ["0", "0", "0", "0"], "filament_cooling_final_speed": ["3.5", "3.5", "3.5", "3.5"], "filament_cooling_initial_speed": ["10", "10", "10", "10"], "filament_cooling_moves": ["2", "2", "2", "2"], "filament_cost": ["25.4", "25.4", "25.4", "25.4"], "filament_density": ["1.24", "1.24", "1.24", "1.24"], "filament_deretraction_speed": ["nil", "nil", "nil", "nil"], "filament_diameter": ["1.75", "1.75", "1.75", "1.75"], "filament_end_gcode": ["; Filament-specific end gcode", "; Filament-specific end gcode", "; Filament-specific end gcode", "; Filament-specific end gcode"], "filament_flow_ratio": ["1", "1", "1", "1"], "filament_ids": ["119531393501", "119531393501", "119531393501", "119531393501"], "filament_is_high_temperature": ["0", "0", "0", "0"], "filament_is_support": ["0", "0", "0", "0"], "filament_loading_speed": ["10", "10", "10", "10"], "filament_loading_speed_start": ["50", "50", "50", "50"], "filament_long_retractions_when_cut": ["nil", "nil", "nil", "nil"], "filament_max_volumetric_speed": ["15", "15", "15", "15"], "filament_minimal_purge_on_wipe_tower": ["15", "15", "15", "15"], "filament_multi_colors": ["#FFFFFFFF", "#FFFFFFFF", "#FFFFFFFF", "#FFFFFFFF"], "filament_multitool_ramming": ["1", "1", "1", "1"], "filament_multitool_ramming_flow": ["30", "30", "30", "30"], "filament_multitool_ramming_volume": ["5", "5", "5", "5"], "filament_notes": ["", "", "", ""], "filament_ramming_parameters": ["250 100 40 40 40 40 40 | 0.05 40 0.45 40 0.95 40 1.45 40 1.95 40 2.45 40 2.95 40 3.45 40 3.95 40 4.45 40 4.95 40", "250 100 40 40 40 40 40 | 0.05 40 0.45 40 0.95 40 1.45 40 1.95 40 2.45 40 2.95 40 3.45 40 3.95 40 4.45 40 4.95 40", "250 100 40 40 40 40 40 | 0.05 40 0.45 40 0.95 40 1.45 40 1.95 40 2.45 40 2.95 40 3.45 40 3.95 40 4.45 40 4.95 40", "250 100 40 40 40 40 40 | 0.05 40 0.45 40 0.95 40 1.45 40 1.95 40 2.45 40 2.95 40 3.45 40 3.95 40 4.45 40 4.95 40"], "filament_retract_before_wipe": ["nil", "nil", "nil", "nil"], "filament_retract_length_toolchange": ["5", "5", "5", "5"], "filament_retract_lift_above": ["nil", "nil", "nil", "nil"], "filament_retract_lift_below": ["nil", "nil", "nil", "nil"], "filament_retract_lift_enforce": ["nil", "nil", "nil", "nil"], "filament_retract_restart_extra": ["nil", "nil", "nil", "nil"], "filament_retract_restart_extra_toolchange": ["nil", "nil", "nil", "nil"], "filament_retract_when_changing_layer": ["nil", "nil", "nil", "nil"], "filament_retraction_distances_when_cut": ["nil", "nil", "nil", "nil"], "filament_retraction_length": ["nil", "nil", "nil", "nil"], "filament_retraction_minimum_travel": ["nil", "nil", "nil", "nil"], "filament_retraction_speed": ["nil", "nil", "nil", "nil"], "filament_settings_id": ["Prusa Generic PLA @MK4S", "Prusa Generic PLA @MK4S", "Prusa Generic PLA @MK4S", "Prusa Generic PLA @MK4S"], "filament_shrink": ["100%", "100%", "100%", "100%"], "filament_shrinkage_compensation_z": ["100%", "100%", "100%", "100%"], "filament_soluble": ["0", "0", "0", "0"], "filament_stamping_distance": ["45", "45", "45", "45"], "filament_stamping_loading_speed": ["29", "29", "29", "29"], "filament_start_gcode": ["M900 K{if nozzle_diameter[filament_extruder_id]==0.4}0.05{elsif nozzle_diameter[filament_extruder_id]==0.25}0.14{elsif nozzle_diameter[filament_extruder_id]==0.3}0.07{elsif nozzle_diameter[filament_extruder_id]==0.35}0.06{elsif nozzle_diameter[filament_extruder_id]==0.6}0.03{elsif nozzle_diameter[filament_extruder_id]==0.5}0.035{elsif nozzle_diameter[filament_extruder_id]==0.8}0.015{else}0{endif} ; Filament gcode\n\n{if printer_notes=~/.*(MK4IS|XLIS|MK4S|MK3.9S).*/}\nM572 S{if nozzle_diameter[filament_extruder_id]==0.4}0.036{elsif nozzle_diameter[filament_extruder_id]==0.5}0.025{elsif nozzle_diameter[filament_extruder_id]==0.6}0.02{elsif nozzle_diameter[filament_extruder_id]==0.8}0.014{elsif nozzle_diameter[filament_extruder_id]==0.25}0.12{elsif nozzle_diameter[filament_extruder_id]==0.3}0.08{else}0{endif} ; Filament gcode\n{endif}\n\nM142 S36 ; set heatbreak target temp", "M900 K{if nozzle_diameter[filament_extruder_id]==0.4}0.05{elsif nozzle_diameter[filament_extruder_id]==0.25}0.14{elsif nozzle_diameter[filament_extruder_id]==0.3}0.07{elsif nozzle_diameter[filament_extruder_id]==0.35}0.06{elsif nozzle_diameter[filament_extruder_id]==0.6}0.03{elsif nozzle_diameter[filament_extruder_id]==0.5}0.035{elsif nozzle_diameter[filament_extruder_id]==0.8}0.015{else}0{endif} ; Filament gcode\n\n{if printer_notes=~/.*(MK4IS|XLIS|MK4S|MK3.9S).*/}\nM572 S{if nozzle_diameter[filament_extruder_id]==0.4}0.036{elsif nozzle_diameter[filament_extruder_id]==0.5}0.025{elsif nozzle_diameter[filament_extruder_id]==0.6}0.02{elsif nozzle_diameter[filament_extruder_id]==0.8}0.014{elsif nozzle_diameter[filament_extruder_id]==0.25}0.12{elsif nozzle_diameter[filament_extruder_id]==0.3}0.08{else}0{endif} ; Filament gcode\n{endif}\n\nM142 S36 ; set heatbreak target temp", "M900 K{if nozzle_diameter[filament_extruder_id]==0.4}0.05{elsif nozzle_diameter[filament_extruder_id]==0.25}0.14{elsif nozzle_diameter[filament_extruder_id]==0.3}0.07{elsif nozzle_diameter[filament_extruder_id]==0.35}0.06{elsif nozzle_diameter[filament_extruder_id]==0.6}0.03{elsif nozzle_diameter[filament_extruder_id]==0.5}0.035{elsif nozzle_diameter[filament_extruder_id]==0.8}0.015{else}0{endif} ; Filament gcode\n\n{if printer_notes=~/.*(MK4IS|XLIS|MK4S|MK3.9S).*/}\nM572 S{if nozzle_diameter[filament_extruder_id]==0.4}0.036{elsif nozzle_diameter[filament_extruder_id]==0.5}0.025{elsif nozzle_diameter[filament_extruder_id]==0.6}0.02{elsif nozzle_diameter[filament_extruder_id]==0.8}0.014{elsif nozzle_diameter[filament_extruder_id]==0.25}0.12{elsif nozzle_diameter[filament_extruder_id]==0.3}0.08{else}0{endif} ; Filament gcode\n{endif}\n\nM142 S36 ; set heatbreak target temp", "M900 K{if nozzle_diameter[filament_extruder_id]==0.4}0.05{elsif nozzle_diameter[filament_extruder_id]==0.25}0.14{elsif nozzle_diameter[filament_extruder_id]==0.3}0.07{elsif nozzle_diameter[filament_extruder_id]==0.35}0.06{elsif nozzle_diameter[filament_extruder_id]==0.6}0.03{elsif nozzle_diameter[filament_extruder_id]==0.5}0.035{elsif nozzle_diameter[filament_extruder_id]==0.8}0.015{else}0{endif} ; Filament gcode\n\n{if printer_notes=~/.*(MK4IS|XLIS|MK4S|MK3.9S).*/}\nM572 S{if nozzle_diameter[filament_extruder_id]==0.4}0.036{elsif nozzle_diameter[filament_extruder_id]==0.5}0.025{elsif nozzle_diameter[filament_extruder_id]==0.6}0.02{elsif nozzle_diameter[filament_extruder_id]==0.8}0.014{elsif nozzle_diameter[filament_extruder_id]==0.25}0.12{elsif nozzle_diameter[filament_extruder_id]==0.3}0.08{else}0{endif} ; Filament gcode\n{endif}\n\nM142 S36 ; set heatbreak target temp"], "filament_toolchange_delay": ["0", "0", "0", "0"], "filament_tower_ironing_area": ["4", "4", "4", "4"], "filament_type": ["PLA", "PLA", "PLA", "PLA"], "filament_unloading_speed": ["100", "100", "100", "100"], "filament_unloading_speed_start": ["100", "100", "100", "100"], "filament_vendor": ["Generic", "Generic", "Generic", "Generic"], "filament_wipe": ["nil", "nil", "nil", "nil"], "filament_wipe_distance": ["nil", "nil", "nil", "nil"], "filament_z_hop": ["nil", "nil", "nil", "nil"], "filament_z_hop_types": ["Slope Lift", "Slope Lift", "Slope Lift", "Slope Lift"], "filename_format": "{input_filename_base}_{filament_type[0]}_{print_time}.gcode", "fill_multiline": "1", "filter_out_gap_fill": "0", "first_layer_print_sequence": ["0"], "flush_into_infill": "0", "flush_into_objects": "0", "flush_into_support": "1", "flush_multiplier": "0.3", "flush_volumes_matrix": ["0", "492", "729", "233", "377", "0", "684", "239", "405", "400", "0", "223", "551", "601", "703", "0"], "flush_volumes_vector": ["140", "140", "140", "140", "140", "140", "140", "140"], "from": "project", "full_fan_speed_layer": ["3", "3", "3", "3"], "fuzzy_skin": "none", "fuzzy_skin_first_layer": "0", "fuzzy_skin_mode": "displacement", "fuzzy_skin_noise_type": "classic", "fuzzy_skin_octaves": "4", "fuzzy_skin_persistence": "0.5", "fuzzy_skin_point_distance": "0.8", "fuzzy_skin_scale": "1", "fuzzy_skin_thickness": "0.3", "gap_fill_target": "nowhere", "gap_infill_speed": "40", "gcode_add_line_number": "0", "gcode_comments": "0", "gcode_flavor": "marlin2", "gcode_label_objects": "1", "graphic_effect_plate_temp": ["65", "65", "65", "65"], "graphic_effect_plate_temp_initial_layer": ["65", "65", "65", "65"], "has_scarf_joint_seam": "0", "head_wrap_detect_zone": [], "high_current_on_filament_swap": "0", "hole_to_polyhole": "0", "hole_to_polyhole_threshold": "0.01", "hole_to_polyhole_twisted": "1", "host_type": "prusalink", "hot_plate_temp": ["60", "60", "60", "60"], "hot_plate_temp_initial_layer": ["60", "60", "60", "60"], "idle_temperature": ["0", "0", "0", "0"], "independent_support_layer_height": "1", "infill_anchor": "2.5", "infill_anchor_max": "12", "infill_combination": "1", "infill_combination_max_layer_height": "100%", "infill_direction": "45", "infill_jerk": "9", "infill_lock_depth": "1", "infill_overhang_angle": "60", "infill_shift_step": "0.4", "infill_wall_overlap": "10%", "initial_layer_acceleration": "800", "initial_layer_infill_speed": "105", "initial_layer_jerk": "9", "initial_layer_line_width": "0.42", "initial_layer_min_bead_width": "85%", "initial_layer_print_height": "0.2", "initial_layer_speed": "20", "initial_layer_travel_speed": "100%", "inner_wall_acceleration": "800", "inner_wall_jerk": "9", "inner_wall_line_width": "0.45", "inner_wall_speed": "45", "interface_shells": "0", "interlocking_beam": "0", "interlocking_beam_layer_count": "2", "interlocking_beam_width": "0.8", "interlocking_boundary_avoidance": "2", "interlocking_depth": "2", "interlocking_orientation": "22.5", "internal_bridge_angle": "0", "internal_bridge_density": "100%", "internal_bridge_fan_speed": ["-1", "-1", "-1", "-1"], "internal_bridge_flow": "1", "internal_bridge_speed": "150%", "internal_solid_infill_acceleration": "0", "internal_solid_infill_line_width": "0.45", "internal_solid_infill_pattern": "rectilinear", "internal_solid_infill_speed": "80", "ironing_angle": "-1", "ironing_fan_speed": ["-1", "-1", "-1", "-1"], "ironing_flow": "15%", "ironing_inset": "0", "ironing_pattern": "rectilinear", "ironing_spacing": "0.1", "ironing_speed": "15", "ironing_type": "no ironing", "is_infill_first": "0", "lateral_lattice_angle_1": "-45", "lateral_lattice_angle_2": "45", "layer_change_gcode": ";AFTER_LAYER_CHANGE\n;[layer_z]\n{if ! spiral_mode}M74 W[extruded_weight_total]{endif}\n", "layer_height": "0.2", "line_width": "0.45", "local_z_wipe_tower_purge_lines": "3", "long_retractions_when_cut": ["0", "0", "0", "0"], "machine_end_gcode": "{if layer_z < max_print_height}G1 Z{z_offset+min(layer_z+1, max_print_height)} F720 ; Move print head up{endif}\nM104 S0 ; turn off temperature\nM140 S0 ; turn off heatbed\nM107 ; turn off fan\nG1 X241 Y170 F3600 ; park\n{if layer_z < max_print_height}G1 Z{z_offset+min(layer_z+23, max_print_height)} F300 ; Move print head up{endif}\nG4 ; wait\nM572 S0 ; reset PA\nM593 X T2 F0 ; disable IS\nM593 Y T2 F0 ; disable IS\nM84 X Y E ; disable motors\n; max_layer_z = [max_layer_z]", "machine_load_filament_time": "0", "machine_max_acceleration_e": ["2500", "2500"], "machine_max_acceleration_extruding": ["4000", "2500"], "machine_max_acceleration_retracting": ["1200", "1200"], "machine_max_acceleration_travel": ["4000", "2500"], "machine_max_acceleration_x": ["4000", "2500"], "machine_max_acceleration_y": ["4000", "2500"], "machine_max_acceleration_z": ["200", "200"], "machine_max_jerk_e": ["10", "10"], "machine_max_jerk_x": ["8", "8"], "machine_max_jerk_y": ["8", "8"], "machine_max_jerk_z": ["2", "2"], "machine_max_junction_deviation": ["0", "0"], "machine_max_speed_e": ["100", "100"], "machine_max_speed_x": ["300", "160"], "machine_max_speed_y": ["300", "160"], "machine_max_speed_z": ["40", "40"], "machine_min_extruding_rate": ["0", "0"], "machine_min_travel_rate": ["0", "0"], "machine_pause_gcode": "M400 U1\n", "machine_start_gcode": "M17 ; enable steppers\nM862.1 P[nozzle_diameter] ; nozzle check\nM862.3 P \"MK4S\" ; printer model check\nM862.5 P2 ; g-code level check\nM862.6 P\"Input shaper\" ; FW feature check\nM115 U6.1.3+7898\n\nM555 X{(min(print_bed_max[0], first_layer_print_min[0] + 32) - 32)} Y{(max(0, first_layer_print_min[1]) - 4)} W{((min(print_bed_max[0], max(first_layer_print_min[0] + 32, first_layer_print_max[0])))) - ((min(print_bed_max[0], first_layer_print_min[0] + 32) - 32))} H{((first_layer_print_max[1])) - ((max(0, first_layer_print_min[1]) - 4))}\n\nG90 ; use absolute coordinates\nM83 ; extruder relative mode\n\nM140 S[first_layer_bed_temperature] ; set bed temp\nM104 T0 S{((filament_notes[0]=~/.*HT_MBL10.*/) ? (first_layer_temperature[0] - 10) : (filament_type[0] == \"PC\" or filament_type[0] == \"PA\") ? (first_layer_temperature[0] - 25) : (filament_type[0] == \"FLEX\") ? 210 : (filament_type[0]=~/.*PET.*/) ? 175 : 170)} ; set extruder temp for bed leveling\nM109 T0 R{((filament_notes[0]=~/.*HT_MBL10.*/) ? (first_layer_temperature[0] - 10) : (filament_type[0] == \"PC\" or filament_type[0] == \"PA\") ? (first_layer_temperature[0] - 25) : (filament_type[0] == \"FLEX\") ? 210 : (filament_type[0]=~/.*PET.*/) ? 175 : 170)} ; wait for temp\n\nM84 E ; turn off E motor\n\nG28 ; home all without mesh bed level\n\nG1 X42 Y-4 Z5 F4800\n\nM302 S160 ; lower cold extrusion limit to 160C\n\n{if filament_type[initial_tool]==\"FLEX\"}\nG1 E-4 F2400 ; retraction\n{else}\nG1 E-2 F2400 ; retraction\n{endif}\n\nM84 E ; turn off E motor\n\nG29 P9 X10 Y-4 W32 H4\n\n{if first_layer_bed_temperature[initial_tool]<=60}M106 S100{endif}\n\nG0 Z40 F10000\n\nM190 S[first_layer_bed_temperature] ; wait for bed temp\n\nM107\n\n;\n; MBL\n;\nM84 E ; turn off E motor\nG29 P1 ; invalidate mbl & probe print area\nG29 P1 X0 Y0 W50 H20 C ; probe near purge place\nG29 P3.2 ; interpolate mbl probes\nG29 P3.13 ; extrapolate mbl outside probe area\nG29 A ; activate mbl\n\n; prepare for purge\nM104 S{first_layer_temperature[0]}\nG0 X0 Y-4 Z15 F4800 ; move away and ready for the purge\nM109 S{first_layer_temperature[0]}\n\nG92 E0\nM569 S0 E ; set spreadcycle mode for extruder\n\n;\n; Extrude purge line\n;\nG92 E0 ; reset extruder position\nG1 E{(filament_type[0] == \"FLEX\" ? 4 : 2)} F2400 ; deretraction after the initial one before nozzle cleaning\nG0 E7 X15 Z0.2 F500 ; purge\nG0 X25 E4 F500 ; purge\nG0 X35 E4 F650 ; purge\nG0 X45 E4 F800 ; purge\nG0 X48 Z0.05 F8000 ; wipe, move close to the bed\nG0 X51 Z0.2 F8000 ; wipe, move quickly away from the bed\n\nG92 E0\nM221 S100 ; set flow to 100%", "machine_tool_change_time": "5", "machine_unload_filament_time": "0", "make_overhang_printable": "0", "make_overhang_printable_angle": "55", "make_overhang_printable_hole_size": "0", "manual_filament_change": "0", "max_bridge_length": "10", "max_layer_height": ["0.30", "0.30", "0.30", "0.30"], "max_resonance_avoidance_speed": "120", "max_travel_detour_distance": "0", "max_volumetric_extrusion_rate_slope": "0", "max_volumetric_extrusion_rate_slope_segment_length": "3", "min_bead_width": "85%", "min_feature_size": "25%", "min_layer_height": ["0.07", "0.07", "0.07", "0.07"], "min_length_factor": "0.5", "min_resonance_avoidance_speed": "70", "min_skirt_length": "0", "min_width_top_surface": "200%", "minimum_sparse_infill_area": "0", "mixed_color_layer_height_a": "0", "mixed_color_layer_height_b": "0", "mixed_filament_advanced_dithering": "0", "mixed_filament_component_bias_enabled": "0", "mixed_filament_definitions": "", "mixed_filament_gradient_mode": "0", "mixed_filament_height_lower_bound": "0.04", "mixed_filament_height_upper_bound": "0.16", "mixed_filament_pointillism_line_gap": "0", "mixed_filament_pointillism_pixel_size": "0", "mixed_filament_region_collapse": "1", "mixed_filament_surface_indentation": "0", "mmu_segmented_region_interlocking_depth": "0", "mmu_segmented_region_max_width": "0", "name": "project_settings", "notes": "", "nozzle_diameter": ["0.4"], "nozzle_height": "2.5", "nozzle_hrc": "0", "nozzle_temperature": ["220", "220", "220", "220"], "nozzle_temperature_initial_layer": ["230", "230", "230", "230"], "nozzle_temperature_range_high": ["230", "230", "230", "230"], "nozzle_temperature_range_low": ["190", "190", "190", "190"], "nozzle_type": "hardened_steel", "nozzle_volume": "143", "only_one_wall_first_layer": "0", "only_one_wall_top": "1", "ooze_prevention": "0", "other_layers_print_sequence": ["0"], "other_layers_print_sequence_nums": "0", "outer_wall_acceleration": "0", "outer_wall_jerk": "9", "outer_wall_line_width": "0.45", "outer_wall_speed": "25", "overhang_1_4_speed": "0", "overhang_2_4_speed": "50", "overhang_3_4_speed": "30", "overhang_4_4_speed": "10", "overhang_fan_speed": ["100", "100", "100", "100"], "overhang_fan_threshold": ["50%", "50%", "50%", "50%"], "overhang_reverse": "0", "overhang_reverse_internal_only": "0", "overhang_reverse_threshold": "50%", "parking_pos_retraction": "92", "pellet_flow_coefficient": ["0.4157", "0.4157", "0.4157", "0.4157"], "pellet_modded_printer": "0", "post_process": [""], "precise_outer_wall": "0", "precise_z_height": "0", "preferred_orientation": "0", "preheat_steps": "1", "preheat_time": "30", "pressure_advance": ["0.02", "0.02", "0.02", "0.02"], "prime_tower_brim_chamfer": "1", "prime_tower_brim_chamfer_max_width": "4", "prime_tower_brim_width": "2", "prime_tower_width": "60", "prime_volume": "45", "print_compatible_printers": ["Snapmaker U1 (0.4 nozzle)"], "print_flow_ratio": "1", "print_order": "default", "print_sequence": "by layer", "print_settings_id": "0.20mm Quality @MK3S", "printable_area": ["0x0", "250x0", "250x210", "0x210"], "printable_height": "220", "printer_model": "Snapmaker U1", "printer_notes": "Don't remove the following keywords! These keywords are used in the \"compatible printer\" condition of the print and filament profiles to link the particular print and filament profiles to this printer profile.\nPRINTER_MODEL_MK4S\nPG\nNO_TEMPLATES", "printer_settings_id": "Prusa MK4S 0.4 nozzle", "printer_structure": "undefine", "printer_technology": "FFF", "printer_variant": "0.4", "printhost_authorization_type": "key", "printhost_ssl_ignore_revoke": "0", "printing_by_object_gcode": "", "purge_in_prime_tower": "0", "raft_contact_distance": "0.2", "raft_expansion": "1.5", "raft_first_layer_density": "90%", "raft_first_layer_expansion": "3", "raft_layers": "0", "ramming_line_width_ratio": "2", "ramming_pressure_advance_value": "0.02", "reduce_crossing_wall": "0", "reduce_fan_stop_start_freq": ["1", "1", "1", "1"], "reduce_infill_retraction": "0", "required_nozzle_HRC": ["0", "0", "0", "0"], "resolution": "0", "resonance_avoidance": "0", "retract_before_wipe": ["80", "80", "80", "80"], "retract_length_toolchange": ["0", "0", "0", "0"], "retract_lift_above": ["0", "0", "0", "0"], "retract_lift_below": ["219", "219", "219", "219"], "retract_lift_enforce": ["All Surfaces", "All Surfaces", "All Surfaces", "All Surfaces"], "retract_restart_extra": ["0"], "retract_restart_extra_toolchange": ["0"], "retract_when_changing_layer": ["0", "0", "0", "0"], "retraction_distances_when_cut": ["18", "18", "18", "18"], "retraction_length": ["0.7", "0.7", "0.7", "0.7"], "retraction_minimum_travel": ["1.5", "1.5", "1.5", "1.5"], "retraction_speed": ["35", "35", "35", "35"], "role_based_wipe_speed": "1", "scan_first_layer": "0", "scarf_angle_threshold": "155", "scarf_joint_flow_ratio": "1", "scarf_joint_speed": "100%", "scarf_overhang_threshold": "40%", "seam_gap": "15%", "seam_position": "aligned", "seam_slope_conditional": "1", "seam_slope_entire_loop": "0", "seam_slope_inner_walls": "0", "seam_slope_min_length": "20", "seam_slope_start_height": "0", "seam_slope_steps": "10", "seam_slope_type": "external", "silent_mode": "0", "single_extruder_multi_material": "0", "single_extruder_multi_material_priming": "0", "single_loop_draft_shield": "0", "skeleton_infill_density": "25%", "skeleton_infill_line_width": "100%", "skin_infill_density": "25%", "skin_infill_depth": "2", "skin_infill_line_width": "100%", "skirt_distance": "2", "skirt_height": "3", "skirt_loops": "1", "skirt_speed": "50", "skirt_start_angle": "-135", "skirt_type": "combined", "slice_closing_radius": "0.049", "slicing_mode": "regular", "slow_down_for_layer_cooling": ["1", "1", "1", "1"], "slow_down_layer_time": ["6", "6", "6", "6"], "slow_down_layers": "0", "slow_down_min_speed": ["20", "20", "20", "20"], "slowdown_for_curled_perimeters": "0", "small_area_infill_flow_compensation": "0", "small_area_infill_flow_compensation_model": [], "small_perimeter_speed": "25", "small_perimeter_threshold": "0", "solid_infill_direction": "45", "solid_infill_filament": "1", "solid_infill_rotate_template": "", "sparse_infill_acceleration": "1000", "sparse_infill_density": "15%", "sparse_infill_filament": "1", "sparse_infill_line_width": "0.45", "sparse_infill_pattern": "crosshatch", "sparse_infill_rotate_template": "", "sparse_infill_speed": "80", "spiral_finishing_flow_ratio": "0", "spiral_mode": "0", "spiral_mode_max_xy_smoothing": "200%", "spiral_mode_smooth": "0", "spiral_starting_flow_ratio": "0", "staggered_inner_seams": "0", "standby_temperature_delta": "-5", "start_end_points": ["30x-3", "54x245"], "supertack_plate_temp": ["35", "35", "35", "35"], "supertack_plate_temp_initial_layer": ["35", "35", "35", "35"], "support_air_filtration": "1", "support_angle": "0", "support_base_pattern": "default", "support_base_pattern_spacing": "2", "support_bottom_interface_spacing": "0.5", "support_bottom_z_distance": "0.2", "support_chamber_temp_control": "1", "support_critical_regions_only": "0", "support_expansion": "0", "support_filament": "0", "support_interface_bottom_layers": "0", "support_interface_filament": "0", "support_interface_loop_pattern": "0", "support_interface_not_for_body": "1", "support_interface_pattern": "auto", "support_interface_spacing": "0.2", "support_interface_speed": "40", "support_interface_top_layers": "2", "support_ironing": "0", "support_ironing_flow": "10%", "support_ironing_pattern": "rectilinear", "support_ironing_spacing": "0.1", "support_line_width": "0.35", "support_material_interface_fan_speed": ["-1", "-1", "-1", "-1"], "support_multi_bed_types": "0", "support_object_first_layer_gap": "0.2", "support_object_xy_distance": "0.27", "support_on_build_plate_only": "0", "support_remove_small_overhang": "1", "support_speed": "50", "support_style": "grid", "support_threshold_angle": "30", "support_threshold_overlap": "50%", "support_top_z_distance": "0.2", "support_type": "normal(auto)", "symmetric_infill_y_axis": "0", "temperature_vitrification": ["60", "60", "60", "60"], "template_custom_gcode": "", "textured_cool_plate_temp": ["40", "40", "40", "40"], "textured_cool_plate_temp_initial_layer": ["40", "40", "40", "40"], "textured_plate_temp": ["65", "65", "65", "65"], "textured_plate_temp_initial_layer": ["65", "65", "65", "65"], "thick_bridges": "0", "thick_internal_bridges": "1", "thumbnails": "16x16/QOI", "thumbnails_format": "PNG", "time_cost": "0", "time_lapse_gcode": "", "timelapse_type": "0", "tool_change_temprature_wait": "0", "top_bottom_infill_wall_overlap": "25%", "top_shell_layers": "5", "top_shell_thickness": "0.7", "top_solid_infill_flow_ratio": "1", "top_surface_acceleration": "0", "top_surface_density": "100%", "top_surface_jerk": "9", "top_surface_line_width": "0.4", "top_surface_pattern": "monotonicline", "top_surface_speed": "40", "travel_acceleration": "0", "travel_jerk": "12", "travel_slope": ["1", "1", "1", "1"], "travel_speed": "180", "travel_speed_z": "12", "tree_support_adaptive_layer_height": "1", "tree_support_angle_slow": "30", "tree_support_auto_brim": "1", "tree_support_branch_angle": "40", "tree_support_branch_angle_organic": "40", "tree_support_branch_diameter": "2", "tree_support_branch_diameter_angle": "3", "tree_support_branch_diameter_organic": "2", "tree_support_branch_distance": "5", "tree_support_branch_distance_organic": "1", "tree_support_brim_width": "3", "tree_support_tip_diameter": "0.6", "tree_support_top_rate": "30%", "tree_support_wall_count": "0", "upward_compatible_machine": [], "use_firmware_retraction": "0", "use_relative_e_distances": "1", "version": "2.3.5", "wall_direction": "auto", "wall_distribution_count": "1", "wall_filament": "1", "wall_generator": "arachne", "wall_loops": "2", "wall_sequence": "inner wall/outer wall", "wall_transition_angle": "10", "wall_transition_filter_deviation": "25%", "wall_transition_length": "100%", "wipe": ["0", "0", "0", "0"], "wipe_before_external_loop": "0", "wipe_distance": ["2", "2", "2", "2"], "wipe_on_loops": "0", "wipe_speed": "50", "wipe_tower_bridging": "10", "wipe_tower_cone_angle": "15", "wipe_tower_extra_flow": "100%", "wipe_tower_extra_rib_length": "8", "wipe_tower_extra_spacing": "120%", "wipe_tower_filament": "0", "wipe_tower_fillet_wall": "1", "wipe_tower_max_purge_speed": "90", "wipe_tower_no_sparse_layers": "0", "wipe_tower_rib_width": "8", "wipe_tower_rotation_angle": "0", "wipe_tower_wall_gap": "1", "wipe_tower_wall_type": "rib", "wipe_tower_x": ["13"], "wipe_tower_y": ["211"], "wiping_volumes_extruders": ["70", "70", "70", "70", "70", "70", "70", "70", "70", "70"], "xy_contour_compensation": "0", "xy_hole_compensation": "0", "z_hop": ["0.2", "0.2", "0.2", "0.2"], "z_hop_types": ["Slope Lift", "Slope Lift", "Slope Lift", "Slope Lift"], "z_hop_when_prime": ["0", "0", "0", "0"], "z_offset": "0"}, "filaments": {"ABS": {"id": "Prusa Generic ABS @MK4S", "values": {"cool_plate_temp": ["105"], "eng_plate_temp": ["105"], "hot_plate_temp": "110", "cool_plate_temp_initial_layer": ["105"], "eng_plate_temp_initial_layer": ["105"], "hot_plate_temp_initial_layer": "100", "overhang_fan_threshold": ["25%"], "overhang_fan_speed": "20", "slow_down_for_layer_cooling": ["1"], "close_fan_the_first_x_layers": "4", "filament_end_gcode": ["; Filament-specific end gcode"], "filament_flow_ratio": ["1"], "reduce_fan_stop_start_freq": "0", "fan_cooling_layer_time": ["30"], "filament_cost": "27.82", "filament_density": ["1.04"], "filament_deretraction_speed": ["nil"], "filament_diameter": ["1.75"], "filament_max_volumetric_speed": "15", "filament_minimal_purge_on_wipe_tower": "35", "filament_retraction_minimum_travel": ["nil"], "filament_retract_before_wipe": ["nil"], "filament_retract_when_changing_layer": ["nil"], "filament_retraction_length": ["nil"], "filament_z_hop": ["nil"], "filament_retract_restart_extra": ["nil"], "filament_retraction_speed": ["nil"], "filament_soluble": ["0"], "filament_type": ["ABS"], "filament_vendor": ["Generic"], "filament_wipe": ["nil"], "filament_wipe_distance": ["nil"], "nozzle_temperature_initial_layer": ["260"], "full_fan_speed_layer": ["0"], "fan_max_speed": "10", "fan_min_speed": ["10"], "slow_down_min_speed": "15", "slow_down_layer_time": "20", "filament_start_gcode": ["M900 K{if nozzle_diameter[filament_extruder_id]==0.4}0.04{elsif nozzle_diameter[filament_extruder_id]==0.25}0.1{elsif nozzle_diameter[filament_extruder_id]==0.3}0.06{elsif nozzle_diameter[filament_extruder_id]==0.35}0.05{elsif nozzle_diameter[filament_extruder_id]==0.5}0.03{elsif nozzle_diameter[filament_extruder_id]==0.6}0.02{elsif nozzle_diameter[filament_extruder_id]==0.8}0.01{else}0{endif} ; Filament gcode\n\n{if printer_notes=~/.*(MK4IS|XLIS|MK4S|MK3.9S).*/}\nM572 S{if nozzle_diameter[filament_extruder_id]==0.4}0.02{elsif nozzle_diameter[filament_extruder_id]==0.5}0.018{elsif nozzle_diameter[filament_extruder_id]==0.6}0.012{elsif nozzle_diameter[filament_extruder_id]==0.8}0.01{elsif nozzle_diameter[filament_extruder_id]==0.25}0.09{elsif nozzle_diameter[filament_extruder_id]==0.3}0.065{else}0{endif} ; Filament gcode\n{endif}\n\nM142 S40 ; set heatbreak target temp"], "nozzle_temperature": ["260"], "temperature_vitrification": ["110"], "idle_temperature": "0", "nozzle_temperature_range_low": ["240"], "nozzle_temperature_range_high": ["270"], "default_filament_colour": "#FFF2EC", "filament_notes": [""], "filament_ramming_parameters": ["250 100 42.4 42.4 42.4 42.4 42.4 | 0.05 42.4 0.45 42.4 0.95 42.4 1.45 42.4 1.95 42.4 2.45 42.4 2.95 42.4 3.45 42.4 3.95 42.4 4.45 42.4 4.95 42.4"]}}, "ASA": {"id": "Prusa Generic ASA @MK4S", "values": {"cool_plate_temp": ["105"], "eng_plate_temp": ["105"], "hot_plate_temp": "110", "cool_plate_temp_initial_layer": ["105"], "eng_plate_temp_initial_layer": ["105"], "hot_plate_temp_initial_layer": ["105"], "overhang_fan_threshold": ["25%"], "overhang_fan_speed": "20", "slow_down_for_layer_cooling": ["1"], "close_fan_the_first_x_layers": "4", "filament_end_gcode": ["; Filament-specific end gcode"], "filament_flow_ratio": ["1"], "reduce_fan_stop_start_freq": ["1"], "fan_cooling_layer_time": "20", "filament_cost": "35.28", "filament_density": "1.07", "filament_deretraction_speed": ["nil"], "filament_diameter": ["1.75"], "filament_max_volumetric_speed": "15", "filament_minimal_purge_on_wipe_tower": "35", "filament_retraction_minimum_travel": ["nil"], "filament_retract_before_wipe": ["nil"], "filament_retract_when_changing_layer": ["nil"], "filament_retraction_length": ["nil"], "filament_z_hop": ["nil"], "filament_retract_restart_extra": ["nil"], "filament_retraction_speed": ["nil"], "filament_soluble": ["0"], "filament_type": ["ASA"], "filament_vendor": ["Generic"], "filament_wipe": ["nil"], "filament_wipe_distance": ["nil"], "nozzle_temperature_initial_layer": ["260"], "full_fan_speed_layer": ["0"], "fan_max_speed": "12", "fan_min_speed": "12", "slow_down_min_speed": "15", "slow_down_layer_time": "10", "filament_start_gcode": ["M900 K{if nozzle_diameter[filament_extruder_id]==0.4}0.04{elsif nozzle_diameter[filament_extruder_id]==0.25}0.1{elsif nozzle_diameter[filament_extruder_id]==0.3}0.06{elsif nozzle_diameter[filament_extruder_id]==0.35}0.05{elsif nozzle_diameter[filament_extruder_id]==0.5}0.03{elsif nozzle_diameter[filament_extruder_id]==0.6}0.02{elsif nozzle_diameter[filament_extruder_id]==0.8}0.01{else}0{endif} ; Filament gcode\n\n{if printer_notes=~/.*(MK4IS|XLIS|MK4S|MK3.9S).*/}\nM572 S{if nozzle_diameter[filament_extruder_id]==0.4}0.02{elsif nozzle_diameter[filament_extruder_id]==0.5}0.018{elsif nozzle_diameter[filament_extruder_id]==0.6}0.012{elsif nozzle_diameter[filament_extruder_id]==0.8}0.01{elsif nozzle_diameter[filament_extruder_id]==0.25}0.09{elsif nozzle_diameter[filament_extruder_id]==0.3}0.065{else}0{endif} ; Filament gcode\n{endif}\n\nM142 S40 ; set heatbreak target temp"], "nozzle_temperature": ["260"], "temperature_vitrification": ["110"], "idle_temperature": "0", "nozzle_temperature_range_low": ["240"], "nozzle_temperature_range_high": ["270"], "default_filament_colour": "#FFF2EC", "filament_notes": [""]}}, "PETG": {"id": "Prusa Generic PETG @MK4S", "values": {"cool_plate_temp": ["60"], "eng_plate_temp": ["0"], "hot_plate_temp": "90", "cool_plate_temp_initial_layer": ["60"], "eng_plate_temp_initial_layer": ["0"], "hot_plate_temp_initial_layer": "85", "overhang_fan_threshold": ["95%"], "overhang_fan_speed": "40", "slow_down_for_layer_cooling": ["1"], "close_fan_the_first_x_layers": ["3"], "filament_end_gcode": ["; Filament-specific end gcode"], "filament_flow_ratio": ["1"], "reduce_fan_stop_start_freq": ["1"], "fan_cooling_layer_time": ["20"], "filament_cost": "27.82", "filament_density": ["1.27"], "filament_deretraction_speed": ["nil"], "filament_diameter": ["1.75"], "filament_max_volumetric_speed": "12", "filament_minimal_purge_on_wipe_tower": "35", "filament_retraction_minimum_travel": ["nil"], "filament_retract_before_wipe": "20", "filament_retract_when_changing_layer": ["nil"], "filament_retraction_length": "0.8", "filament_z_hop": "0.15", "filament_retract_restart_extra": ["nil"], "filament_retraction_speed": ["nil"], "filament_soluble": ["0"], "filament_type": ["PETG"], "filament_vendor": ["Generic"], "filament_wipe": "1", "filament_wipe_distance": ["nil"], "nozzle_temperature_initial_layer": "230", "full_fan_speed_layer": "5", "fan_max_speed": "40", "fan_min_speed": ["20"], "slow_down_min_speed": "15", "slow_down_layer_time": "7", "filament_start_gcode": ["M900 K{if nozzle_diameter[filament_extruder_id]==0.4}0.07{elsif nozzle_diameter[filament_extruder_id]==0.25}0.12{elsif nozzle_diameter[filament_extruder_id]==0.3}0.09{elsif nozzle_diameter[filament_extruder_id]==0.35}0.08{elsif nozzle_diameter[filament_extruder_id]==0.6}0.04{elsif nozzle_diameter[filament_extruder_id]==0.5}0.05{elsif nozzle_diameter[filament_extruder_id]==0.8}0.02{else}0{endif} ; Filament gcode\n\n{if printer_notes=~/.*(MK4IS|XLIS|MK4S|MK3.9S).*/}\nM572 S{if nozzle_diameter[filament_extruder_id]==0.4}0.053{elsif nozzle_diameter[filament_extruder_id]==0.5}0.042{elsif nozzle_diameter[filament_extruder_id]==0.6}0.032{elsif nozzle_diameter[filament_extruder_id]==0.8}0.018{elsif nozzle_diameter[filament_extruder_id]==0.25}0.18{elsif nozzle_diameter[filament_extruder_id]==0.3}0.1{else}0{endif} ; Filament gcode\n{endif}\n\nM142 S36 ; set heatbreak target temp"], "nozzle_temperature": "240", "temperature_vitrification": ["80"], "idle_temperature": "0", "nozzle_temperature_range_low": ["220"], "nozzle_temperature_range_high": ["260"], "default_filament_colour": "#FF8000", "filament_notes": [""], "filament_ramming_parameters": ["250 100 42.4 42.4 42.4 42.4 42.4 | 0.05 42.4 0.45 42.4 0.95 42.4 1.45 42.4 1.95 42.4 2.45 42.4 2.95 42.4 3.45 42.4 3.95 42.4 4.45 42.4 4.95 42.4"]}}, "PLA": {"id": "Prusa Generic PLA @MK4S", "values": {"cool_plate_temp": ["35"], "eng_plate_temp": ["0"], "hot_plate_temp": ["60"], "cool_plate_temp_initial_layer": ["35"], "eng_plate_temp_initial_layer": ["0"], "hot_plate_temp_initial_layer": ["60"], "overhang_fan_threshold": ["50%"], "overhang_fan_speed": ["100"], "slow_down_for_layer_cooling": ["1"], "close_fan_the_first_x_layers": ["1"], "filament_end_gcode": ["; Filament-specific end gcode"], "filament_flow_ratio": ["1"], "reduce_fan_stop_start_freq": ["1"], "fan_cooling_layer_time": "17", "filament_cost": "25.4", "filament_density": ["1.24"], "filament_deretraction_speed": ["nil"], "filament_diameter": ["1.75"], "filament_max_volumetric_speed": "15", "filament_minimal_purge_on_wipe_tower": ["15"], "filament_retraction_minimum_travel": ["nil"], "filament_retract_before_wipe": ["nil"], "filament_retract_when_changing_layer": ["nil"], "filament_retraction_length": ["nil"], "filament_z_hop": ["nil"], "filament_retract_restart_extra": ["nil"], "filament_retraction_speed": ["nil"], "filament_soluble": ["0"], "filament_type": ["PLA"], "filament_vendor": ["Generic"], "filament_wipe": ["nil"], "filament_wipe_distance": ["nil"], "nozzle_temperature_initial_layer": "230", "full_fan_speed_layer": "3", "fan_max_speed": ["100"], "fan_min_speed": "70", "slow_down_min_speed": "20", "slow_down_layer_time": "6", "filament_start_gcode": ["M900 K{if nozzle_diameter[filament_extruder_id]==0.4}0.05{elsif nozzle_diameter[filament_extruder_id]==0.25}0.14{elsif nozzle_diameter[filament_extruder_id]==0.3}0.07{elsif nozzle_diameter[filament_extruder_id]==0.35}0.06{elsif nozzle_diameter[filament_extruder_id]==0.6}0.03{elsif nozzle_diameter[filament_extruder_id]==0.5}0.035{elsif nozzle_diameter[filament_extruder_id]==0.8}0.015{else}0{endif} ; Filament gcode\n\n{if printer_notes=~/.*(MK4IS|XLIS|MK4S|MK3.9S).*/}\nM572 S{if nozzle_diameter[filament_extruder_id]==0.4}0.036{elsif nozzle_diameter[filament_extruder_id]==0.5}0.025{elsif nozzle_diameter[filament_extruder_id]==0.6}0.02{elsif nozzle_diameter[filament_extruder_id]==0.8}0.014{elsif nozzle_diameter[filament_extruder_id]==0.25}0.12{elsif nozzle_diameter[filament_extruder_id]==0.3}0.08{else}0{endif} ; Filament gcode\n{endif}\n\nM142 S36 ; set heatbreak target temp"], "nozzle_temperature": ["220"], "temperature_vitrification": ["60"], "idle_temperature": "0", "nozzle_temperature_range_low": ["190"], "nozzle_temperature_range_high": ["230"], "additional_cooling_fan_speed": ["70"], "default_filament_colour": "#FF8000", "filament_notes": [""], "filament_ramming_parameters": ["250 100 40 40 40 40 40 | 0.05 40 0.45 40 0.95 40 1.45 40 1.95 40 2.45 40 2.95 40 3.45 40 3.95 40 4.45 40 4.95 40"]}}}, "defaults": {"sparse_infill_pattern": "gyroid", "support_interface_top_layers": "3", "support_top_z_distance": "0.25"}}
+{
+ "label": "Prusa MK4S",
+ "dialect": "orca",
+ "printer_id": "Prusa MK4S 0.4 nozzle",
+ "process_id": "0.20mm Quality @MK3S",
+ "bed": [
+  250,
+  210,
+  220
+ ],
+ "project_version": "2.3.6",
+ "app_stamp": "BambuStudio-2.2.0",
+ "slice_info": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<config>\n  <header>\n    <header_item key=\"X-BBL-Client-Type\" value=\"slicer\"/>\n    <header_item key=\"X-BBL-Client-Version\" value=\"\"/>\n  </header>\n</config>\n",
+ "enums": {
+  "sparse_infill_pattern": [
+   "3dhoneycomb",
+   "adaptivecubic",
+   "alignedrectilinear",
+   "archimedeanchords",
+   "concentric",
+   "crosshatch",
+   "cubic",
+   "grid",
+   "gyroid",
+   "hilbertcurve",
+   "honeycomb",
+   "lightning",
+   "line",
+   "lockedzag",
+   "octagramspiral",
+   "quartercubic",
+   "supportcubic",
+   "tri-hexagon",
+   "triangles",
+   "zig-zag",
+   "zigzag"
+  ],
+  "brim_type": [
+   "auto_brim",
+   "brim_ears",
+   "inner_only",
+   "no_brim",
+   "outer_and_inner",
+   "outer_only",
+   "painted"
+  ],
+  "support_type": [
+   "hybrid(auto)",
+   "normal",
+   "normal(auto)",
+   "normal(manual)",
+   "tree",
+   "tree(auto)",
+   "tree(manual)"
+  ],
+  "support_style": [
+   "default",
+   "grid",
+   "organic",
+   "snug",
+   "tree_hybrid",
+   "tree_slim",
+   "tree_strong"
+  ],
+  "seam_position": [
+   "aligned",
+   "back",
+   "nearest",
+   "random",
+   "rear"
+  ],
+  "wall_generator": [
+   "arachne",
+   "classic"
+  ],
+  "ironing_type": [
+   "no ironing",
+   "solid",
+   "top",
+   "topmost"
+  ]
+ },
+ "default_colour": "#000000",
+ "template": {
+  "accel_to_decel_enable": "1",
+  "accel_to_decel_factor": "50%",
+  "activate_air_filtration": [
+   "0",
+   "0",
+   "0",
+   "0"
+  ],
+  "activate_chamber_temp_control": [
+   "0",
+   "0",
+   "0",
+   "0"
+  ],
+  "adaptive_bed_mesh_margin": "0",
+  "adaptive_pressure_advance": [
+   "0",
+   "0",
+   "0",
+   "0"
+  ],
+  "adaptive_pressure_advance_bridges": [
+   "0",
+   "0",
+   "0",
+   "0"
+  ],
+  "adaptive_pressure_advance_model": [
+   "0,0,0\n0,0,0",
+   "0,0,0\n0,0,0",
+   "0,0,0\n0,0,0",
+   "0,0,0\n0,0,0"
+  ],
+  "adaptive_pressure_advance_overhangs": [
+   "0",
+   "0",
+   "0",
+   "0"
+  ],
+  "additional_cooling_fan_speed": [
+   "70",
+   "70",
+   "70",
+   "70"
+  ],
+  "align_infill_direction_to_model": "0",
+  "alternate_extra_wall": "0",
+  "auxiliary_fan": "1",
+  "bbl_calib_mark_logo": "1",
+  "bbl_use_printhost": "0",
+  "bed_custom_model": "",
+  "bed_custom_texture": "",
+  "bed_exclude_area": [
+   "0x0"
+  ],
+  "bed_mesh_max": "99999,99999",
+  "bed_mesh_min": "-99999,-99999",
+  "bed_mesh_probe_distance": "50,50",
+  "before_layer_change_gcode": ";BEFORE_LAYER_CHANGE\nG92 E0.0\n;[layer_z]\nM201 X{interpolate_table(extruded_weight_total, (0,4000), (1400,2500), (10000,2500))} Y{interpolate_table(extruded_weight_total, (0,4000), (1400,2500), (10000,2500))}\n",
+  "best_object_pos": "0.5,0.5",
+  "bottom_shell_layers": "4",
+  "bottom_shell_thickness": "0.5",
+  "bottom_solid_infill_flow_ratio": "1",
+  "bottom_surface_density": "100%",
+  "bottom_surface_pattern": "monotonic",
+  "bridge_acceleration": "1000",
+  "bridge_angle": "0",
+  "bridge_density": "80%",
+  "bridge_flow": "0.95",
+  "bridge_no_support": "0",
+  "bridge_speed": "25",
+  "brim_ears_detection_length": "1",
+  "brim_ears_max_angle": "125",
+  "brim_object_gap": "0.1",
+  "brim_type": "outer_only",
+  "brim_width": "0",
+  "calib_flowrate_topinfill_special_order": "0",
+  "chamber_temperature": [
+   "0",
+   "0",
+   "0",
+   "0"
+  ],
+  "change_extrusion_role_gcode": "",
+  "change_filament_gcode": "",
+  "close_fan_the_first_x_layers": [
+   "1",
+   "1",
+   "1",
+   "1"
+  ],
+  "complete_print_exhaust_fan_speed": [
+   "70",
+   "70",
+   "70",
+   "70"
+  ],
+  "cool_plate_temp": [
+   "35",
+   "35",
+   "35",
+   "35"
+  ],
+  "cool_plate_temp_initial_layer": [
+   "35",
+   "35",
+   "35",
+   "35"
+  ],
+  "cooling_tube_length": "5",
+  "cooling_tube_retraction": "91.5",
+  "counterbore_hole_bridging": "none",
+  "curr_bed_type": "Textured PEI Plate",
+  "default_acceleration": "1000",
+  "default_bed_type": "Textured PEI Plate",
+  "default_filament_colour": [
+   "#FF8000",
+   "#FF8000",
+   "#FF8000",
+   "#FF8000"
+  ],
+  "default_filament_profile": [
+   "Snapmaker PLA"
+  ],
+  "default_jerk": "0",
+  "default_junction_deviation": "0",
+  "default_print_profile": "0.20 Standard @Snapmaker U1 (0.4 nozzle)",
+  "delta_temperature": "0",
+  "deretraction_speed": [
+   "25",
+   "25",
+   "25",
+   "25"
+  ],
+  "detect_narrow_internal_solid_infill": "1",
+  "detect_overhang_wall": "1",
+  "detect_thin_wall": "0",
+  "disable_m73": "0",
+  "dithering_local_z_direct_multicolor": "0",
+  "dithering_local_z_infill": "0",
+  "dithering_local_z_mode": "0",
+  "dithering_local_z_whole_objects": "0",
+  "dithering_step_painted_zones_only": "1",
+  "dithering_z_step_size": "0",
+  "dont_filter_internal_bridges": "disabled",
+  "dont_slow_down_outer_wall": [
+   "0",
+   "0",
+   "0",
+   "0"
+  ],
+  "draft_shield": "disabled",
+  "during_print_exhaust_fan_speed": [
+   "70",
+   "70",
+   "70",
+   "70"
+  ],
+  "elefant_foot_compensation": "0.15",
+  "elefant_foot_compensation_layers": "1",
+  "emit_machine_limits_to_gcode": "1",
+  "enable_arc_fitting": "0",
+  "enable_change_pressure_when_wiping": "1",
+  "enable_extra_bridge_layer": "disabled",
+  "enable_filament_ramming": "0",
+  "enable_long_retraction_when_cut": "0",
+  "enable_overhang_bridge_fan": [
+   "1",
+   "1",
+   "1",
+   "1"
+  ],
+  "enable_overhang_speed": "1",
+  "enable_pressure_advance": [
+   "0",
+   "0",
+   "0",
+   "0"
+  ],
+  "enable_prime_tower": "1",
+  "enable_support": "0",
+  "enforce_support_layers": "0",
+  "eng_plate_temp": [
+   "0",
+   "0",
+   "0",
+   "0"
+  ],
+  "eng_plate_temp_initial_layer": [
+   "0",
+   "0",
+   "0",
+   "0"
+  ],
+  "ensure_vertical_shell_thickness": "ensure_all",
+  "exclude_object": "0",
+  "extra_loading_move": "-2",
+  "extra_perimeters_on_overhangs": "0",
+  "extra_solid_infills": "",
+  "extruder_clearance_height_to_lid": "220",
+  "extruder_clearance_height_to_rod": "14",
+  "extruder_clearance_radius": "45",
+  "extruder_colour": [
+   "#018001"
+  ],
+  "extruder_offset": [
+   "0x0"
+  ],
+  "extrusion_rate_smoothing_external_perimeter_only": "0",
+  "fan_cooling_layer_time": [
+   "17",
+   "17",
+   "17",
+   "17"
+  ],
+  "fan_kickstart": "0",
+  "fan_max_speed": [
+   "100",
+   "100",
+   "100",
+   "100"
+  ],
+  "fan_min_speed": [
+   "70",
+   "70",
+   "70",
+   "70"
+  ],
+  "fan_speedup_overhangs": "1",
+  "fan_speedup_time": "0",
+  "filament_colour": [
+   "#29A0C2",
+   "#898989",
+   "#000000",
+   "#FF8000"
+  ],
+  "filament_colour_mode": [
+   "0",
+   "0",
+   "0",
+   "0"
+  ],
+  "filament_cooling_final_speed": [
+   "3.5",
+   "3.5",
+   "3.5",
+   "3.5"
+  ],
+  "filament_cooling_initial_speed": [
+   "10",
+   "10",
+   "10",
+   "10"
+  ],
+  "filament_cooling_moves": [
+   "2",
+   "2",
+   "2",
+   "2"
+  ],
+  "filament_cost": [
+   "25.4",
+   "25.4",
+   "25.4",
+   "25.4"
+  ],
+  "filament_density": [
+   "1.24",
+   "1.24",
+   "1.24",
+   "1.24"
+  ],
+  "filament_deretraction_speed": [
+   "nil",
+   "nil",
+   "nil",
+   "nil"
+  ],
+  "filament_diameter": [
+   "1.75",
+   "1.75",
+   "1.75",
+   "1.75"
+  ],
+  "filament_end_gcode": [
+   "; Filament-specific end gcode",
+   "; Filament-specific end gcode",
+   "; Filament-specific end gcode",
+   "; Filament-specific end gcode"
+  ],
+  "filament_flow_ratio": [
+   "1",
+   "1",
+   "1",
+   "1"
+  ],
+  "filament_ids": [
+   "119531393501",
+   "119531393501",
+   "119531393501",
+   "119531393501"
+  ],
+  "filament_is_high_temperature": [
+   "0",
+   "0",
+   "0",
+   "0"
+  ],
+  "filament_is_support": [
+   "0",
+   "0",
+   "0",
+   "0"
+  ],
+  "filament_loading_speed": [
+   "10",
+   "10",
+   "10",
+   "10"
+  ],
+  "filament_loading_speed_start": [
+   "50",
+   "50",
+   "50",
+   "50"
+  ],
+  "filament_long_retractions_when_cut": [
+   "nil",
+   "nil",
+   "nil",
+   "nil"
+  ],
+  "filament_max_volumetric_speed": [
+   "15",
+   "15",
+   "15",
+   "15"
+  ],
+  "filament_minimal_purge_on_wipe_tower": [
+   "15",
+   "15",
+   "15",
+   "15"
+  ],
+  "filament_multi_colors": [
+   "#29A0C2",
+   "#898989",
+   "#000000",
+   "#FF8000"
+  ],
+  "filament_multitool_ramming": [
+   "1",
+   "1",
+   "1",
+   "1"
+  ],
+  "filament_multitool_ramming_flow": [
+   "30",
+   "30",
+   "30",
+   "30"
+  ],
+  "filament_multitool_ramming_volume": [
+   "5",
+   "5",
+   "5",
+   "5"
+  ],
+  "filament_notes": [
+   "",
+   "",
+   "",
+   ""
+  ],
+  "filament_ramming_parameters": [
+   "250 100 40 40 40 40 40 | 0.05 40 0.45 40 0.95 40 1.45 40 1.95 40 2.45 40 2.95 40 3.45 40 3.95 40 4.45 40 4.95 40",
+   "250 100 40 40 40 40 40 | 0.05 40 0.45 40 0.95 40 1.45 40 1.95 40 2.45 40 2.95 40 3.45 40 3.95 40 4.45 40 4.95 40",
+   "250 100 40 40 40 40 40 | 0.05 40 0.45 40 0.95 40 1.45 40 1.95 40 2.45 40 2.95 40 3.45 40 3.95 40 4.45 40 4.95 40",
+   "250 100 40 40 40 40 40 | 0.05 40 0.45 40 0.95 40 1.45 40 1.95 40 2.45 40 2.95 40 3.45 40 3.95 40 4.45 40 4.95 40"
+  ],
+  "filament_retract_before_wipe": [
+   "nil",
+   "nil",
+   "nil",
+   "nil"
+  ],
+  "filament_retract_length_toolchange": [
+   "5",
+   "5",
+   "5",
+   "5"
+  ],
+  "filament_retract_lift_above": [
+   "nil",
+   "nil",
+   "nil",
+   "nil"
+  ],
+  "filament_retract_lift_below": [
+   "nil",
+   "nil",
+   "nil",
+   "nil"
+  ],
+  "filament_retract_lift_enforce": [
+   "nil",
+   "nil",
+   "nil",
+   "nil"
+  ],
+  "filament_retract_restart_extra": [
+   "nil",
+   "nil",
+   "nil",
+   "nil"
+  ],
+  "filament_retract_restart_extra_toolchange": [
+   "nil",
+   "nil",
+   "nil",
+   "nil"
+  ],
+  "filament_retract_when_changing_layer": [
+   "nil",
+   "nil",
+   "nil",
+   "nil"
+  ],
+  "filament_retraction_distances_when_cut": [
+   "nil",
+   "nil",
+   "nil",
+   "nil"
+  ],
+  "filament_retraction_length": [
+   "nil",
+   "nil",
+   "nil",
+   "nil"
+  ],
+  "filament_retraction_minimum_travel": [
+   "nil",
+   "nil",
+   "nil",
+   "nil"
+  ],
+  "filament_retraction_speed": [
+   "nil",
+   "nil",
+   "nil",
+   "nil"
+  ],
+  "filament_settings_id": [
+   "Prusa Generic PLA @MK4S",
+   "Prusa Generic PLA @MK4S",
+   "Prusa Generic PLA @MK4S",
+   "Prusa Generic PLA @MK4S"
+  ],
+  "filament_shrink": [
+   "100%",
+   "100%",
+   "100%",
+   "100%"
+  ],
+  "filament_shrinkage_compensation_z": [
+   "100%",
+   "100%",
+   "100%",
+   "100%"
+  ],
+  "filament_soluble": [
+   "0",
+   "0",
+   "0",
+   "0"
+  ],
+  "filament_stamping_distance": [
+   "45",
+   "45",
+   "45",
+   "45"
+  ],
+  "filament_stamping_loading_speed": [
+   "29",
+   "29",
+   "29",
+   "29"
+  ],
+  "filament_start_gcode": [
+   "M900 K{if nozzle_diameter[filament_extruder_id]==0.4}0.05{elsif nozzle_diameter[filament_extruder_id]==0.25}0.14{elsif nozzle_diameter[filament_extruder_id]==0.3}0.07{elsif nozzle_diameter[filament_extruder_id]==0.35}0.06{elsif nozzle_diameter[filament_extruder_id]==0.6}0.03{elsif nozzle_diameter[filament_extruder_id]==0.5}0.035{elsif nozzle_diameter[filament_extruder_id]==0.8}0.015{else}0{endif} ; Filament gcode\n\n{if printer_notes=~/.*(MK4IS|XLIS|MK4S|MK3.9S).*/}\nM572 S{if nozzle_diameter[filament_extruder_id]==0.4}0.036{elsif nozzle_diameter[filament_extruder_id]==0.5}0.025{elsif nozzle_diameter[filament_extruder_id]==0.6}0.02{elsif nozzle_diameter[filament_extruder_id]==0.8}0.014{elsif nozzle_diameter[filament_extruder_id]==0.25}0.12{elsif nozzle_diameter[filament_extruder_id]==0.3}0.08{else}0{endif} ; Filament gcode\n{endif}\n\nM142 S36 ; set heatbreak target temp",
+   "M900 K{if nozzle_diameter[filament_extruder_id]==0.4}0.05{elsif nozzle_diameter[filament_extruder_id]==0.25}0.14{elsif nozzle_diameter[filament_extruder_id]==0.3}0.07{elsif nozzle_diameter[filament_extruder_id]==0.35}0.06{elsif nozzle_diameter[filament_extruder_id]==0.6}0.03{elsif nozzle_diameter[filament_extruder_id]==0.5}0.035{elsif nozzle_diameter[filament_extruder_id]==0.8}0.015{else}0{endif} ; Filament gcode\n\n{if printer_notes=~/.*(MK4IS|XLIS|MK4S|MK3.9S).*/}\nM572 S{if nozzle_diameter[filament_extruder_id]==0.4}0.036{elsif nozzle_diameter[filament_extruder_id]==0.5}0.025{elsif nozzle_diameter[filament_extruder_id]==0.6}0.02{elsif nozzle_diameter[filament_extruder_id]==0.8}0.014{elsif nozzle_diameter[filament_extruder_id]==0.25}0.12{elsif nozzle_diameter[filament_extruder_id]==0.3}0.08{else}0{endif} ; Filament gcode\n{endif}\n\nM142 S36 ; set heatbreak target temp",
+   "M900 K{if nozzle_diameter[filament_extruder_id]==0.4}0.05{elsif nozzle_diameter[filament_extruder_id]==0.25}0.14{elsif nozzle_diameter[filament_extruder_id]==0.3}0.07{elsif nozzle_diameter[filament_extruder_id]==0.35}0.06{elsif nozzle_diameter[filament_extruder_id]==0.6}0.03{elsif nozzle_diameter[filament_extruder_id]==0.5}0.035{elsif nozzle_diameter[filament_extruder_id]==0.8}0.015{else}0{endif} ; Filament gcode\n\n{if printer_notes=~/.*(MK4IS|XLIS|MK4S|MK3.9S).*/}\nM572 S{if nozzle_diameter[filament_extruder_id]==0.4}0.036{elsif nozzle_diameter[filament_extruder_id]==0.5}0.025{elsif nozzle_diameter[filament_extruder_id]==0.6}0.02{elsif nozzle_diameter[filament_extruder_id]==0.8}0.014{elsif nozzle_diameter[filament_extruder_id]==0.25}0.12{elsif nozzle_diameter[filament_extruder_id]==0.3}0.08{else}0{endif} ; Filament gcode\n{endif}\n\nM142 S36 ; set heatbreak target temp",
+   "M900 K{if nozzle_diameter[filament_extruder_id]==0.4}0.05{elsif nozzle_diameter[filament_extruder_id]==0.25}0.14{elsif nozzle_diameter[filament_extruder_id]==0.3}0.07{elsif nozzle_diameter[filament_extruder_id]==0.35}0.06{elsif nozzle_diameter[filament_extruder_id]==0.6}0.03{elsif nozzle_diameter[filament_extruder_id]==0.5}0.035{elsif nozzle_diameter[filament_extruder_id]==0.8}0.015{else}0{endif} ; Filament gcode\n\n{if printer_notes=~/.*(MK4IS|XLIS|MK4S|MK3.9S).*/}\nM572 S{if nozzle_diameter[filament_extruder_id]==0.4}0.036{elsif nozzle_diameter[filament_extruder_id]==0.5}0.025{elsif nozzle_diameter[filament_extruder_id]==0.6}0.02{elsif nozzle_diameter[filament_extruder_id]==0.8}0.014{elsif nozzle_diameter[filament_extruder_id]==0.25}0.12{elsif nozzle_diameter[filament_extruder_id]==0.3}0.08{else}0{endif} ; Filament gcode\n{endif}\n\nM142 S36 ; set heatbreak target temp"
+  ],
+  "filament_toolchange_delay": [
+   "0",
+   "0",
+   "0",
+   "0"
+  ],
+  "filament_tower_ironing_area": [
+   "4",
+   "4",
+   "4",
+   "4"
+  ],
+  "filament_type": [
+   "PLA",
+   "PLA",
+   "PLA",
+   "PLA"
+  ],
+  "filament_unloading_speed": [
+   "100",
+   "100",
+   "100",
+   "100"
+  ],
+  "filament_unloading_speed_start": [
+   "100",
+   "100",
+   "100",
+   "100"
+  ],
+  "filament_vendor": [
+   "Generic",
+   "Generic",
+   "Generic",
+   "Generic"
+  ],
+  "filament_wipe": [
+   "nil",
+   "nil",
+   "nil",
+   "nil"
+  ],
+  "filament_wipe_distance": [
+   "nil",
+   "nil",
+   "nil",
+   "nil"
+  ],
+  "filament_z_hop": [
+   "nil",
+   "nil",
+   "nil",
+   "nil"
+  ],
+  "filament_z_hop_types": [
+   "Slope Lift",
+   "Slope Lift",
+   "Slope Lift",
+   "Slope Lift"
+  ],
+  "filename_format": "{input_filename_base}_{filament_type[0]}_{print_time}.gcode",
+  "fill_multiline": "1",
+  "filter_out_gap_fill": "0",
+  "first_layer_print_sequence": [
+   "0"
+  ],
+  "flush_into_infill": "0",
+  "flush_into_objects": "0",
+  "flush_into_support": "1",
+  "flush_multiplier": "0.3",
+  "flush_volumes_matrix": [
+   "0",
+   "492",
+   "492",
+   "492",
+   "492",
+   "0",
+   "492",
+   "492",
+   "492",
+   "492",
+   "0",
+   "492",
+   "492",
+   "492",
+   "492",
+   "0"
+  ],
+  "flush_volumes_vector": [
+   "140",
+   "140",
+   "140",
+   "140",
+   "140",
+   "140",
+   "140",
+   "140"
+  ],
+  "from": "project",
+  "full_fan_speed_layer": [
+   "3",
+   "3",
+   "3",
+   "3"
+  ],
+  "fuzzy_skin": "none",
+  "fuzzy_skin_first_layer": "0",
+  "fuzzy_skin_mode": "displacement",
+  "fuzzy_skin_noise_type": "classic",
+  "fuzzy_skin_octaves": "4",
+  "fuzzy_skin_persistence": "0.5",
+  "fuzzy_skin_point_distance": "0.8",
+  "fuzzy_skin_scale": "1",
+  "fuzzy_skin_thickness": "0.3",
+  "gap_fill_target": "topbottom",
+  "gap_infill_speed": "40",
+  "gcode_add_line_number": "0",
+  "gcode_comments": "0",
+  "gcode_flavor": "marlin2",
+  "gcode_label_objects": "1",
+  "graphic_effect_plate_temp": [
+   "65",
+   "65",
+   "65",
+   "65"
+  ],
+  "graphic_effect_plate_temp_initial_layer": [
+   "65",
+   "65",
+   "65",
+   "65"
+  ],
+  "has_scarf_joint_seam": "0",
+  "head_wrap_detect_zone": [],
+  "high_current_on_filament_swap": "0",
+  "hole_to_polyhole": "0",
+  "hole_to_polyhole_threshold": "0.01",
+  "hole_to_polyhole_twisted": "1",
+  "host_type": "prusalink",
+  "hot_plate_temp": [
+   "60",
+   "60",
+   "60",
+   "60"
+  ],
+  "hot_plate_temp_initial_layer": [
+   "60",
+   "60",
+   "60",
+   "60"
+  ],
+  "idle_temperature": [
+   "0",
+   "0",
+   "0",
+   "0"
+  ],
+  "independent_support_layer_height": "0",
+  "infill_anchor": "2.5",
+  "infill_anchor_max": "12",
+  "infill_combination": "1",
+  "infill_combination_max_layer_height": "100%",
+  "infill_direction": "45",
+  "infill_jerk": "9",
+  "infill_lock_depth": "1",
+  "infill_overhang_angle": "60",
+  "infill_shift_step": "0.4",
+  "infill_wall_overlap": "10%",
+  "initial_layer_acceleration": "800",
+  "initial_layer_infill_speed": "105",
+  "initial_layer_jerk": "9",
+  "initial_layer_line_width": "0.42",
+  "initial_layer_min_bead_width": "85%",
+  "initial_layer_print_height": "0.2",
+  "initial_layer_speed": "20",
+  "initial_layer_travel_speed": "100%",
+  "inner_wall_acceleration": "800",
+  "inner_wall_jerk": "9",
+  "inner_wall_line_width": "0.45",
+  "inner_wall_speed": "45",
+  "interface_shells": "0",
+  "interlocking_beam": "0",
+  "interlocking_beam_layer_count": "2",
+  "interlocking_beam_width": "0.8",
+  "interlocking_boundary_avoidance": "2",
+  "interlocking_depth": "2",
+  "interlocking_orientation": "22.5",
+  "internal_bridge_angle": "0",
+  "internal_bridge_density": "100%",
+  "internal_bridge_fan_speed": [
+   "-1",
+   "-1",
+   "-1",
+   "-1"
+  ],
+  "internal_bridge_flow": "1",
+  "internal_bridge_speed": "150%",
+  "internal_solid_infill_acceleration": "0",
+  "internal_solid_infill_line_width": "0.45",
+  "internal_solid_infill_pattern": "rectilinear",
+  "internal_solid_infill_speed": "80",
+  "ironing_angle": "-1",
+  "ironing_fan_speed": [
+   "-1",
+   "-1",
+   "-1",
+   "-1"
+  ],
+  "ironing_flow": "15%",
+  "ironing_inset": "0",
+  "ironing_pattern": "rectilinear",
+  "ironing_spacing": "0.1",
+  "ironing_speed": "15",
+  "ironing_type": "no ironing",
+  "is_infill_first": "0",
+  "lateral_lattice_angle_1": "-45",
+  "lateral_lattice_angle_2": "45",
+  "layer_change_gcode": ";AFTER_LAYER_CHANGE\n;[layer_z]\n{if ! spiral_mode}M74 W[extruded_weight_total]{endif}\n",
+  "layer_height": "0.2",
+  "line_width": "0.45",
+  "local_z_wipe_tower_purge_lines": "3",
+  "long_retractions_when_cut": [
+   "0",
+   "0",
+   "0",
+   "0"
+  ],
+  "machine_end_gcode": "{if layer_z < max_print_height}G1 Z{z_offset+min(layer_z+1, max_print_height)} F720 ; Move print head up{endif}\nM104 S0 ; turn off temperature\nM140 S0 ; turn off heatbed\nM107 ; turn off fan\nG1 X241 Y170 F3600 ; park\n{if layer_z < max_print_height}G1 Z{z_offset+min(layer_z+23, max_print_height)} F300 ; Move print head up{endif}\nG4 ; wait\nM572 S0 ; reset PA\nM593 X T2 F0 ; disable IS\nM593 Y T2 F0 ; disable IS\nM84 X Y E ; disable motors\n; max_layer_z = [max_layer_z]",
+  "machine_load_filament_time": "0",
+  "machine_max_acceleration_e": [
+   "2500",
+   "2500"
+  ],
+  "machine_max_acceleration_extruding": [
+   "4000",
+   "2500"
+  ],
+  "machine_max_acceleration_retracting": [
+   "1200",
+   "1200"
+  ],
+  "machine_max_acceleration_travel": [
+   "4000",
+   "2500"
+  ],
+  "machine_max_acceleration_x": [
+   "4000",
+   "2500"
+  ],
+  "machine_max_acceleration_y": [
+   "4000",
+   "2500"
+  ],
+  "machine_max_acceleration_z": [
+   "200",
+   "200"
+  ],
+  "machine_max_jerk_e": [
+   "10",
+   "10"
+  ],
+  "machine_max_jerk_x": [
+   "8",
+   "8"
+  ],
+  "machine_max_jerk_y": [
+   "8",
+   "8"
+  ],
+  "machine_max_jerk_z": [
+   "2",
+   "2"
+  ],
+  "machine_max_junction_deviation": [
+   "0",
+   "0"
+  ],
+  "machine_max_speed_e": [
+   "100",
+   "100"
+  ],
+  "machine_max_speed_x": [
+   "300",
+   "160"
+  ],
+  "machine_max_speed_y": [
+   "300",
+   "160"
+  ],
+  "machine_max_speed_z": [
+   "40",
+   "40"
+  ],
+  "machine_min_extruding_rate": [
+   "0",
+   "0"
+  ],
+  "machine_min_travel_rate": [
+   "0",
+   "0"
+  ],
+  "machine_pause_gcode": "M400 U1\n",
+  "machine_start_gcode": "M17 ; enable steppers\nM862.1 P[nozzle_diameter] ; nozzle check\nM862.3 P \"MK4S\" ; printer model check\nM862.5 P2 ; g-code level check\nM862.6 P\"Input shaper\" ; FW feature check\nM115 U6.1.3+7898\n\nM555 X{(min(print_bed_max[0], first_layer_print_min[0] + 32) - 32)} Y{(max(0, first_layer_print_min[1]) - 4)} W{((min(print_bed_max[0], max(first_layer_print_min[0] + 32, first_layer_print_max[0])))) - ((min(print_bed_max[0], first_layer_print_min[0] + 32) - 32))} H{((first_layer_print_max[1])) - ((max(0, first_layer_print_min[1]) - 4))}\n\nG90 ; use absolute coordinates\nM83 ; extruder relative mode\n\nM140 S[first_layer_bed_temperature] ; set bed temp\nM104 T0 S{((filament_notes[0]=~/.*HT_MBL10.*/) ? (first_layer_temperature[0] - 10) : (filament_type[0] == \"PC\" or filament_type[0] == \"PA\") ? (first_layer_temperature[0] - 25) : (filament_type[0] == \"FLEX\") ? 210 : (filament_type[0]=~/.*PET.*/) ? 175 : 170)} ; set extruder temp for bed leveling\nM109 T0 R{((filament_notes[0]=~/.*HT_MBL10.*/) ? (first_layer_temperature[0] - 10) : (filament_type[0] == \"PC\" or filament_type[0] == \"PA\") ? (first_layer_temperature[0] - 25) : (filament_type[0] == \"FLEX\") ? 210 : (filament_type[0]=~/.*PET.*/) ? 175 : 170)} ; wait for temp\n\nM84 E ; turn off E motor\n\nG28 ; home all without mesh bed level\n\nG1 X42 Y-4 Z5 F4800\n\nM302 S160 ; lower cold extrusion limit to 160C\n\n{if filament_type[initial_tool]==\"FLEX\"}\nG1 E-4 F2400 ; retraction\n{else}\nG1 E-2 F2400 ; retraction\n{endif}\n\nM84 E ; turn off E motor\n\nG29 P9 X10 Y-4 W32 H4\n\n{if first_layer_bed_temperature[initial_tool]<=60}M106 S100{endif}\n\nG0 Z40 F10000\n\nM190 S[first_layer_bed_temperature] ; wait for bed temp\n\nM107\n\n;\n; MBL\n;\nM84 E ; turn off E motor\nG29 P1 ; invalidate mbl & probe print area\nG29 P1 X0 Y0 W50 H20 C ; probe near purge place\nG29 P3.2 ; interpolate mbl probes\nG29 P3.13 ; extrapolate mbl outside probe area\nG29 A ; activate mbl\n\n; prepare for purge\nM104 S{first_layer_temperature[0]}\nG0 X0 Y-4 Z15 F4800 ; move away and ready for the purge\nM109 S{first_layer_temperature[0]}\n\nG92 E0\nM569 S0 E ; set spreadcycle mode for extruder\n\n;\n; Extrude purge line\n;\nG92 E0 ; reset extruder position\nG1 E{(filament_type[0] == \"FLEX\" ? 4 : 2)} F2400 ; deretraction after the initial one before nozzle cleaning\nG0 E7 X15 Z0.2 F500 ; purge\nG0 X25 E4 F500 ; purge\nG0 X35 E4 F650 ; purge\nG0 X45 E4 F800 ; purge\nG0 X48 Z0.05 F8000 ; wipe, move close to the bed\nG0 X51 Z0.2 F8000 ; wipe, move quickly away from the bed\n\nG92 E0\nM221 S100 ; set flow to 100%",
+  "machine_tool_change_time": "5",
+  "machine_unload_filament_time": "0",
+  "make_overhang_printable": "0",
+  "make_overhang_printable_angle": "55",
+  "make_overhang_printable_hole_size": "0",
+  "manual_filament_change": "0",
+  "max_bridge_length": "10",
+  "max_layer_height": [
+   "0.30",
+   "0.30",
+   "0.30",
+   "0.30"
+  ],
+  "max_resonance_avoidance_speed": "120",
+  "max_travel_detour_distance": "0",
+  "max_volumetric_extrusion_rate_slope": "0",
+  "max_volumetric_extrusion_rate_slope_segment_length": "3",
+  "min_bead_width": "85%",
+  "min_feature_size": "25%",
+  "min_layer_height": [
+   "0.07",
+   "0.07",
+   "0.07",
+   "0.07"
+  ],
+  "min_length_factor": "0.5",
+  "min_resonance_avoidance_speed": "70",
+  "min_skirt_length": "0",
+  "min_width_top_surface": "200%",
+  "minimum_sparse_infill_area": "0",
+  "mixed_color_layer_height_a": "0",
+  "mixed_color_layer_height_b": "0",
+  "mixed_filament_advanced_dithering": "0",
+  "mixed_filament_component_bias_enabled": "0",
+  "mixed_filament_definitions": "",
+  "mixed_filament_gradient_mode": "0",
+  "mixed_filament_height_lower_bound": "0.04",
+  "mixed_filament_height_upper_bound": "0.16",
+  "mixed_filament_pointillism_line_gap": "0",
+  "mixed_filament_pointillism_pixel_size": "0",
+  "mixed_filament_region_collapse": "1",
+  "mixed_filament_surface_indentation": "0",
+  "mmu_segmented_region_interlocking_depth": "0",
+  "mmu_segmented_region_max_width": "0",
+  "name": "project_settings",
+  "notes": "",
+  "nozzle_diameter": [
+   "0.4"
+  ],
+  "nozzle_height": "2.5",
+  "nozzle_hrc": "0",
+  "nozzle_temperature": [
+   "220",
+   "220",
+   "220",
+   "220"
+  ],
+  "nozzle_temperature_initial_layer": [
+   "230",
+   "230",
+   "230",
+   "230"
+  ],
+  "nozzle_temperature_range_high": [
+   "230",
+   "230",
+   "230",
+   "230"
+  ],
+  "nozzle_temperature_range_low": [
+   "190",
+   "190",
+   "190",
+   "190"
+  ],
+  "nozzle_type": "hardened_steel",
+  "nozzle_volume": "143",
+  "only_one_wall_first_layer": "0",
+  "only_one_wall_top": "1",
+  "ooze_prevention": "0",
+  "other_layers_print_sequence": [
+   "0"
+  ],
+  "other_layers_print_sequence_nums": "0",
+  "outer_wall_acceleration": "0",
+  "outer_wall_jerk": "9",
+  "outer_wall_line_width": "0.45",
+  "outer_wall_speed": "25",
+  "overhang_1_4_speed": "0",
+  "overhang_2_4_speed": "50",
+  "overhang_3_4_speed": "30",
+  "overhang_4_4_speed": "10",
+  "overhang_fan_speed": [
+   "100",
+   "100",
+   "100",
+   "100"
+  ],
+  "overhang_fan_threshold": [
+   "50%",
+   "50%",
+   "50%",
+   "50%"
+  ],
+  "overhang_reverse": "0",
+  "overhang_reverse_internal_only": "0",
+  "overhang_reverse_threshold": "50%",
+  "parking_pos_retraction": "92",
+  "pellet_flow_coefficient": [
+   "0.4157",
+   "0.4157",
+   "0.4157",
+   "0.4157"
+  ],
+  "pellet_modded_printer": "0",
+  "post_process": [
+   ""
+  ],
+  "precise_outer_wall": "0",
+  "precise_z_height": "0",
+  "preferred_orientation": "0",
+  "preheat_steps": "1",
+  "preheat_time": "30",
+  "pressure_advance": [
+   "0.02",
+   "0.02",
+   "0.02",
+   "0.02"
+  ],
+  "prime_tower_brim_chamfer": "1",
+  "prime_tower_brim_chamfer_max_width": "4",
+  "prime_tower_brim_width": "2",
+  "prime_tower_width": "60",
+  "prime_volume": "45",
+  "print_compatible_printers": [
+   "Snapmaker U1 (0.4 nozzle)"
+  ],
+  "print_flow_ratio": "1",
+  "print_order": "default",
+  "print_sequence": "by layer",
+  "print_settings_id": "0.20mm Quality @MK3S",
+  "printable_area": [
+   "0x0",
+   "250x0",
+   "250x210",
+   "0x210"
+  ],
+  "printable_height": "220",
+  "printer_model": "Snapmaker U1",
+  "printer_notes": "Don't remove the following keywords! These keywords are used in the \"compatible printer\" condition of the print and filament profiles to link the particular print and filament profiles to this printer profile.\nPRINTER_MODEL_MK4S\nPG\nNO_TEMPLATES",
+  "printer_settings_id": "Prusa MK4S 0.4 nozzle",
+  "printer_structure": "undefine",
+  "printer_technology": "FFF",
+  "printer_variant": "0.4",
+  "printhost_authorization_type": "key",
+  "printhost_ssl_ignore_revoke": "0",
+  "printing_by_object_gcode": "",
+  "purge_in_prime_tower": "0",
+  "raft_contact_distance": "0.2",
+  "raft_expansion": "1.5",
+  "raft_first_layer_density": "90%",
+  "raft_first_layer_expansion": "3",
+  "raft_layers": "0",
+  "ramming_line_width_ratio": "2",
+  "ramming_pressure_advance_value": "0.02",
+  "reduce_crossing_wall": "0",
+  "reduce_fan_stop_start_freq": [
+   "1",
+   "1",
+   "1",
+   "1"
+  ],
+  "reduce_infill_retraction": "0",
+  "required_nozzle_HRC": [
+   "0",
+   "0",
+   "0",
+   "0"
+  ],
+  "resolution": "0",
+  "resonance_avoidance": "0",
+  "retract_before_wipe": [
+   "80",
+   "80",
+   "80",
+   "80"
+  ],
+  "retract_length_toolchange": [
+   "0",
+   "0",
+   "0",
+   "0"
+  ],
+  "retract_lift_above": [
+   "0",
+   "0",
+   "0",
+   "0"
+  ],
+  "retract_lift_below": [
+   "219",
+   "219",
+   "219",
+   "219"
+  ],
+  "retract_lift_enforce": [
+   "All Surfaces",
+   "All Surfaces",
+   "All Surfaces",
+   "All Surfaces"
+  ],
+  "retract_restart_extra": [
+   "0"
+  ],
+  "retract_restart_extra_toolchange": [
+   "0"
+  ],
+  "retract_when_changing_layer": [
+   "0",
+   "0",
+   "0",
+   "0"
+  ],
+  "retraction_distances_when_cut": [
+   "18",
+   "18",
+   "18",
+   "18"
+  ],
+  "retraction_length": [
+   "0.7",
+   "0.7",
+   "0.7",
+   "0.7"
+  ],
+  "retraction_minimum_travel": [
+   "1.5",
+   "1.5",
+   "1.5",
+   "1.5"
+  ],
+  "retraction_speed": [
+   "35",
+   "35",
+   "35",
+   "35"
+  ],
+  "role_based_wipe_speed": "1",
+  "scan_first_layer": "0",
+  "scarf_angle_threshold": "155",
+  "scarf_joint_flow_ratio": "1",
+  "scarf_joint_speed": "100%",
+  "scarf_overhang_threshold": "40%",
+  "seam_gap": "15%",
+  "seam_position": "aligned",
+  "seam_slope_conditional": "0",
+  "seam_slope_entire_loop": "0",
+  "seam_slope_inner_walls": "0",
+  "seam_slope_min_length": "20",
+  "seam_slope_start_height": "0",
+  "seam_slope_steps": "10",
+  "seam_slope_type": "none",
+  "silent_mode": "0",
+  "single_extruder_multi_material": "0",
+  "single_extruder_multi_material_priming": "0",
+  "single_loop_draft_shield": "0",
+  "skeleton_infill_density": "25%",
+  "skeleton_infill_line_width": "100%",
+  "skin_infill_density": "25%",
+  "skin_infill_depth": "2",
+  "skin_infill_line_width": "100%",
+  "skirt_distance": "2",
+  "skirt_height": "3",
+  "skirt_loops": "1",
+  "skirt_speed": "50",
+  "skirt_start_angle": "-135",
+  "skirt_type": "combined",
+  "slice_closing_radius": "0.049",
+  "slicing_mode": "regular",
+  "slow_down_for_layer_cooling": [
+   "1",
+   "1",
+   "1",
+   "1"
+  ],
+  "slow_down_layer_time": [
+   "6",
+   "6",
+   "6",
+   "6"
+  ],
+  "slow_down_layers": "0",
+  "slow_down_min_speed": [
+   "20",
+   "20",
+   "20",
+   "20"
+  ],
+  "slowdown_for_curled_perimeters": "0",
+  "small_area_infill_flow_compensation": "0",
+  "small_area_infill_flow_compensation_model": [],
+  "small_perimeter_speed": "25",
+  "small_perimeter_threshold": "0",
+  "solid_infill_direction": "45",
+  "solid_infill_filament": "1",
+  "solid_infill_rotate_template": "",
+  "sparse_infill_acceleration": "1000",
+  "sparse_infill_density": "15%",
+  "sparse_infill_filament": "1",
+  "sparse_infill_line_width": "0.45",
+  "sparse_infill_pattern": "crosshatch",
+  "sparse_infill_rotate_template": "",
+  "sparse_infill_speed": "80",
+  "spiral_finishing_flow_ratio": "0",
+  "spiral_mode": "0",
+  "spiral_mode_max_xy_smoothing": "200%",
+  "spiral_mode_smooth": "0",
+  "spiral_starting_flow_ratio": "0",
+  "staggered_inner_seams": "0",
+  "standby_temperature_delta": "-5",
+  "start_end_points": [
+   "30x-3",
+   "54x245"
+  ],
+  "supertack_plate_temp": [
+   "40",
+   "40",
+   "40",
+   "40"
+  ],
+  "supertack_plate_temp_initial_layer": [
+   "40",
+   "40",
+   "40",
+   "40"
+  ],
+  "support_air_filtration": "1",
+  "support_angle": "0",
+  "support_base_pattern": "default",
+  "support_base_pattern_spacing": "2",
+  "support_bottom_interface_spacing": "0.5",
+  "support_bottom_z_distance": "0.2",
+  "support_chamber_temp_control": "1",
+  "support_critical_regions_only": "0",
+  "support_expansion": "0",
+  "support_filament": "0",
+  "support_interface_bottom_layers": "0",
+  "support_interface_filament": "0",
+  "support_interface_loop_pattern": "0",
+  "support_interface_not_for_body": "1",
+  "support_interface_pattern": "auto",
+  "support_interface_spacing": "0.2",
+  "support_interface_speed": "40",
+  "support_interface_top_layers": "2",
+  "support_ironing": "0",
+  "support_ironing_flow": "10%",
+  "support_ironing_pattern": "rectilinear",
+  "support_ironing_spacing": "0.1",
+  "support_line_width": "0.35",
+  "support_material_interface_fan_speed": [
+   "-1",
+   "-1",
+   "-1",
+   "-1"
+  ],
+  "support_multi_bed_types": "0",
+  "support_object_first_layer_gap": "0.2",
+  "support_object_xy_distance": "0.27",
+  "support_on_build_plate_only": "0",
+  "support_remove_small_overhang": "1",
+  "support_speed": "50",
+  "support_style": "grid",
+  "support_threshold_angle": "30",
+  "support_threshold_overlap": "50%",
+  "support_top_z_distance": "0.2",
+  "support_type": "normal(auto)",
+  "symmetric_infill_y_axis": "0",
+  "temperature_vitrification": [
+   "60",
+   "60",
+   "60",
+   "60"
+  ],
+  "template_custom_gcode": "",
+  "textured_cool_plate_temp": [
+   "40",
+   "40",
+   "40",
+   "40"
+  ],
+  "textured_cool_plate_temp_initial_layer": [
+   "40",
+   "40",
+   "40",
+   "40"
+  ],
+  "textured_plate_temp": [
+   "65",
+   "65",
+   "65",
+   "65"
+  ],
+  "textured_plate_temp_initial_layer": [
+   "65",
+   "65",
+   "65",
+   "65"
+  ],
+  "thick_bridges": "0",
+  "thick_internal_bridges": "1",
+  "thumbnails": "16x16/QOI",
+  "thumbnails_format": "PNG",
+  "time_cost": "0",
+  "time_lapse_gcode": "",
+  "timelapse_type": "0",
+  "tool_change_temprature_wait": "0",
+  "top_bottom_infill_wall_overlap": "25%",
+  "top_shell_layers": "5",
+  "top_shell_thickness": "0.7",
+  "top_solid_infill_flow_ratio": "1",
+  "top_surface_acceleration": "0",
+  "top_surface_density": "100%",
+  "top_surface_jerk": "9",
+  "top_surface_line_width": "0.4",
+  "top_surface_pattern": "monotonicline",
+  "top_surface_speed": "40",
+  "travel_acceleration": "0",
+  "travel_jerk": "12",
+  "travel_slope": [
+   "1",
+   "1",
+   "1",
+   "1"
+  ],
+  "travel_speed": "180",
+  "travel_speed_z": "12",
+  "tree_support_adaptive_layer_height": "1",
+  "tree_support_angle_slow": "30",
+  "tree_support_auto_brim": "1",
+  "tree_support_branch_angle": "40",
+  "tree_support_branch_angle_organic": "40",
+  "tree_support_branch_diameter": "2",
+  "tree_support_branch_diameter_angle": "3",
+  "tree_support_branch_diameter_organic": "2",
+  "tree_support_branch_distance": "5",
+  "tree_support_branch_distance_organic": "1",
+  "tree_support_brim_width": "3",
+  "tree_support_tip_diameter": "0.6",
+  "tree_support_top_rate": "30%",
+  "tree_support_wall_count": "0",
+  "upward_compatible_machine": [],
+  "use_firmware_retraction": "0",
+  "use_relative_e_distances": "1",
+  "version": "2.3.6",
+  "wall_direction": "auto",
+  "wall_distribution_count": "1",
+  "wall_filament": "1",
+  "wall_generator": "arachne",
+  "wall_loops": "2",
+  "wall_sequence": "inner wall/outer wall",
+  "wall_transition_angle": "10",
+  "wall_transition_filter_deviation": "25%",
+  "wall_transition_length": "100%",
+  "wipe": [
+   "0",
+   "0",
+   "0",
+   "0"
+  ],
+  "wipe_before_external_loop": "0",
+  "wipe_distance": [
+   "2",
+   "2",
+   "2",
+   "2"
+  ],
+  "wipe_on_loops": "0",
+  "wipe_speed": "50",
+  "wipe_tower_bridging": "10",
+  "wipe_tower_cone_angle": "15",
+  "wipe_tower_extra_flow": "100%",
+  "wipe_tower_extra_rib_length": "8",
+  "wipe_tower_extra_spacing": "120%",
+  "wipe_tower_filament": "0",
+  "wipe_tower_fillet_wall": "1",
+  "wipe_tower_max_purge_speed": "90",
+  "wipe_tower_no_sparse_layers": "0",
+  "wipe_tower_rib_width": "8",
+  "wipe_tower_rotation_angle": "0",
+  "wipe_tower_wall_gap": "1",
+  "wipe_tower_wall_type": "rib",
+  "wipe_tower_x": [
+   "13"
+  ],
+  "wipe_tower_y": [
+   "214.5"
+  ],
+  "wiping_volumes_extruders": [
+   "70",
+   "70",
+   "70",
+   "70",
+   "70",
+   "70",
+   "70",
+   "70",
+   "70",
+   "70"
+  ],
+  "xy_contour_compensation": "0",
+  "xy_hole_compensation": "0",
+  "z_hop": [
+   "0.2",
+   "0.2",
+   "0.2",
+   "0.2"
+  ],
+  "z_hop_types": [
+   "Slope Lift",
+   "Slope Lift",
+   "Slope Lift",
+   "Slope Lift"
+  ],
+  "z_hop_when_prime": [
+   "0",
+   "0",
+   "0",
+   "0"
+  ],
+  "z_offset": "0"
+ },
+ "filaments": {
+  "ABS": {
+   "id": "Prusa Generic ABS @MK4S",
+   "values": {
+    "cool_plate_temp": [
+     "105"
+    ],
+    "eng_plate_temp": [
+     "105"
+    ],
+    "hot_plate_temp": "110",
+    "cool_plate_temp_initial_layer": [
+     "105"
+    ],
+    "eng_plate_temp_initial_layer": [
+     "105"
+    ],
+    "hot_plate_temp_initial_layer": "100",
+    "overhang_fan_threshold": [
+     "25%"
+    ],
+    "overhang_fan_speed": "20",
+    "slow_down_for_layer_cooling": [
+     "1"
+    ],
+    "close_fan_the_first_x_layers": "4",
+    "filament_end_gcode": [
+     "; Filament-specific end gcode"
+    ],
+    "filament_flow_ratio": [
+     "1"
+    ],
+    "reduce_fan_stop_start_freq": "0",
+    "fan_cooling_layer_time": [
+     "30"
+    ],
+    "filament_cost": "27.82",
+    "filament_density": [
+     "1.04"
+    ],
+    "filament_deretraction_speed": [
+     "nil"
+    ],
+    "filament_diameter": [
+     "1.75"
+    ],
+    "filament_max_volumetric_speed": "15",
+    "filament_minimal_purge_on_wipe_tower": "35",
+    "filament_retraction_minimum_travel": [
+     "nil"
+    ],
+    "filament_retract_before_wipe": [
+     "nil"
+    ],
+    "filament_retract_when_changing_layer": [
+     "nil"
+    ],
+    "filament_retraction_length": [
+     "nil"
+    ],
+    "filament_z_hop": [
+     "nil"
+    ],
+    "filament_retract_restart_extra": [
+     "nil"
+    ],
+    "filament_retraction_speed": [
+     "nil"
+    ],
+    "filament_soluble": [
+     "0"
+    ],
+    "filament_type": [
+     "ABS"
+    ],
+    "filament_vendor": [
+     "Generic"
+    ],
+    "filament_wipe": [
+     "nil"
+    ],
+    "filament_wipe_distance": [
+     "nil"
+    ],
+    "nozzle_temperature_initial_layer": [
+     "260"
+    ],
+    "full_fan_speed_layer": [
+     "0"
+    ],
+    "fan_max_speed": "10",
+    "fan_min_speed": [
+     "10"
+    ],
+    "slow_down_min_speed": "15",
+    "slow_down_layer_time": "20",
+    "filament_start_gcode": [
+     "M900 K{if nozzle_diameter[filament_extruder_id]==0.4}0.04{elsif nozzle_diameter[filament_extruder_id]==0.25}0.1{elsif nozzle_diameter[filament_extruder_id]==0.3}0.06{elsif nozzle_diameter[filament_extruder_id]==0.35}0.05{elsif nozzle_diameter[filament_extruder_id]==0.5}0.03{elsif nozzle_diameter[filament_extruder_id]==0.6}0.02{elsif nozzle_diameter[filament_extruder_id]==0.8}0.01{else}0{endif} ; Filament gcode\n\n{if printer_notes=~/.*(MK4IS|XLIS|MK4S|MK3.9S).*/}\nM572 S{if nozzle_diameter[filament_extruder_id]==0.4}0.02{elsif nozzle_diameter[filament_extruder_id]==0.5}0.018{elsif nozzle_diameter[filament_extruder_id]==0.6}0.012{elsif nozzle_diameter[filament_extruder_id]==0.8}0.01{elsif nozzle_diameter[filament_extruder_id]==0.25}0.09{elsif nozzle_diameter[filament_extruder_id]==0.3}0.065{else}0{endif} ; Filament gcode\n{endif}\n\nM142 S40 ; set heatbreak target temp"
+    ],
+    "nozzle_temperature": [
+     "260"
+    ],
+    "temperature_vitrification": [
+     "110"
+    ],
+    "idle_temperature": "0",
+    "nozzle_temperature_range_low": [
+     "240"
+    ],
+    "nozzle_temperature_range_high": [
+     "270"
+    ],
+    "default_filament_colour": "#FFF2EC",
+    "filament_notes": [
+     ""
+    ],
+    "filament_ramming_parameters": [
+     "250 100 42.4 42.4 42.4 42.4 42.4 | 0.05 42.4 0.45 42.4 0.95 42.4 1.45 42.4 1.95 42.4 2.45 42.4 2.95 42.4 3.45 42.4 3.95 42.4 4.45 42.4 4.95 42.4"
+    ]
+   }
+  },
+  "ASA": {
+   "id": "Prusa Generic ASA @MK4S",
+   "values": {
+    "cool_plate_temp": [
+     "105"
+    ],
+    "eng_plate_temp": [
+     "105"
+    ],
+    "hot_plate_temp": "110",
+    "cool_plate_temp_initial_layer": [
+     "105"
+    ],
+    "eng_plate_temp_initial_layer": [
+     "105"
+    ],
+    "hot_plate_temp_initial_layer": [
+     "105"
+    ],
+    "overhang_fan_threshold": [
+     "25%"
+    ],
+    "overhang_fan_speed": "20",
+    "slow_down_for_layer_cooling": [
+     "1"
+    ],
+    "close_fan_the_first_x_layers": "4",
+    "filament_end_gcode": [
+     "; Filament-specific end gcode"
+    ],
+    "filament_flow_ratio": [
+     "1"
+    ],
+    "reduce_fan_stop_start_freq": [
+     "1"
+    ],
+    "fan_cooling_layer_time": "20",
+    "filament_cost": "35.28",
+    "filament_density": "1.07",
+    "filament_deretraction_speed": [
+     "nil"
+    ],
+    "filament_diameter": [
+     "1.75"
+    ],
+    "filament_max_volumetric_speed": "15",
+    "filament_minimal_purge_on_wipe_tower": "35",
+    "filament_retraction_minimum_travel": [
+     "nil"
+    ],
+    "filament_retract_before_wipe": [
+     "nil"
+    ],
+    "filament_retract_when_changing_layer": [
+     "nil"
+    ],
+    "filament_retraction_length": [
+     "nil"
+    ],
+    "filament_z_hop": [
+     "nil"
+    ],
+    "filament_retract_restart_extra": [
+     "nil"
+    ],
+    "filament_retraction_speed": [
+     "nil"
+    ],
+    "filament_soluble": [
+     "0"
+    ],
+    "filament_type": [
+     "ASA"
+    ],
+    "filament_vendor": [
+     "Generic"
+    ],
+    "filament_wipe": [
+     "nil"
+    ],
+    "filament_wipe_distance": [
+     "nil"
+    ],
+    "nozzle_temperature_initial_layer": [
+     "260"
+    ],
+    "full_fan_speed_layer": [
+     "0"
+    ],
+    "fan_max_speed": "12",
+    "fan_min_speed": "12",
+    "slow_down_min_speed": "15",
+    "slow_down_layer_time": "10",
+    "filament_start_gcode": [
+     "M900 K{if nozzle_diameter[filament_extruder_id]==0.4}0.04{elsif nozzle_diameter[filament_extruder_id]==0.25}0.1{elsif nozzle_diameter[filament_extruder_id]==0.3}0.06{elsif nozzle_diameter[filament_extruder_id]==0.35}0.05{elsif nozzle_diameter[filament_extruder_id]==0.5}0.03{elsif nozzle_diameter[filament_extruder_id]==0.6}0.02{elsif nozzle_diameter[filament_extruder_id]==0.8}0.01{else}0{endif} ; Filament gcode\n\n{if printer_notes=~/.*(MK4IS|XLIS|MK4S|MK3.9S).*/}\nM572 S{if nozzle_diameter[filament_extruder_id]==0.4}0.02{elsif nozzle_diameter[filament_extruder_id]==0.5}0.018{elsif nozzle_diameter[filament_extruder_id]==0.6}0.012{elsif nozzle_diameter[filament_extruder_id]==0.8}0.01{elsif nozzle_diameter[filament_extruder_id]==0.25}0.09{elsif nozzle_diameter[filament_extruder_id]==0.3}0.065{else}0{endif} ; Filament gcode\n{endif}\n\nM142 S40 ; set heatbreak target temp"
+    ],
+    "nozzle_temperature": [
+     "260"
+    ],
+    "temperature_vitrification": [
+     "110"
+    ],
+    "idle_temperature": "0",
+    "nozzle_temperature_range_low": [
+     "240"
+    ],
+    "nozzle_temperature_range_high": [
+     "270"
+    ],
+    "default_filament_colour": "#FFF2EC",
+    "filament_notes": [
+     ""
+    ]
+   }
+  },
+  "PETG": {
+   "id": "Prusa Generic PETG @MK4S",
+   "values": {
+    "cool_plate_temp": [
+     "60"
+    ],
+    "eng_plate_temp": [
+     "0"
+    ],
+    "hot_plate_temp": "90",
+    "cool_plate_temp_initial_layer": [
+     "60"
+    ],
+    "eng_plate_temp_initial_layer": [
+     "0"
+    ],
+    "hot_plate_temp_initial_layer": "85",
+    "overhang_fan_threshold": [
+     "95%"
+    ],
+    "overhang_fan_speed": "40",
+    "slow_down_for_layer_cooling": [
+     "1"
+    ],
+    "close_fan_the_first_x_layers": [
+     "3"
+    ],
+    "filament_end_gcode": [
+     "; Filament-specific end gcode"
+    ],
+    "filament_flow_ratio": [
+     "1"
+    ],
+    "reduce_fan_stop_start_freq": [
+     "1"
+    ],
+    "fan_cooling_layer_time": [
+     "20"
+    ],
+    "filament_cost": "27.82",
+    "filament_density": [
+     "1.27"
+    ],
+    "filament_deretraction_speed": [
+     "nil"
+    ],
+    "filament_diameter": [
+     "1.75"
+    ],
+    "filament_max_volumetric_speed": "12",
+    "filament_minimal_purge_on_wipe_tower": "35",
+    "filament_retraction_minimum_travel": [
+     "nil"
+    ],
+    "filament_retract_before_wipe": "20",
+    "filament_retract_when_changing_layer": [
+     "nil"
+    ],
+    "filament_retraction_length": "0.8",
+    "filament_z_hop": "0.15",
+    "filament_retract_restart_extra": [
+     "nil"
+    ],
+    "filament_retraction_speed": [
+     "nil"
+    ],
+    "filament_soluble": [
+     "0"
+    ],
+    "filament_type": [
+     "PETG"
+    ],
+    "filament_vendor": [
+     "Generic"
+    ],
+    "filament_wipe": "1",
+    "filament_wipe_distance": [
+     "nil"
+    ],
+    "nozzle_temperature_initial_layer": "230",
+    "full_fan_speed_layer": "5",
+    "fan_max_speed": "40",
+    "fan_min_speed": [
+     "20"
+    ],
+    "slow_down_min_speed": "15",
+    "slow_down_layer_time": "7",
+    "filament_start_gcode": [
+     "M900 K{if nozzle_diameter[filament_extruder_id]==0.4}0.07{elsif nozzle_diameter[filament_extruder_id]==0.25}0.12{elsif nozzle_diameter[filament_extruder_id]==0.3}0.09{elsif nozzle_diameter[filament_extruder_id]==0.35}0.08{elsif nozzle_diameter[filament_extruder_id]==0.6}0.04{elsif nozzle_diameter[filament_extruder_id]==0.5}0.05{elsif nozzle_diameter[filament_extruder_id]==0.8}0.02{else}0{endif} ; Filament gcode\n\n{if printer_notes=~/.*(MK4IS|XLIS|MK4S|MK3.9S).*/}\nM572 S{if nozzle_diameter[filament_extruder_id]==0.4}0.053{elsif nozzle_diameter[filament_extruder_id]==0.5}0.042{elsif nozzle_diameter[filament_extruder_id]==0.6}0.032{elsif nozzle_diameter[filament_extruder_id]==0.8}0.018{elsif nozzle_diameter[filament_extruder_id]==0.25}0.18{elsif nozzle_diameter[filament_extruder_id]==0.3}0.1{else}0{endif} ; Filament gcode\n{endif}\n\nM142 S36 ; set heatbreak target temp"
+    ],
+    "nozzle_temperature": "240",
+    "temperature_vitrification": [
+     "80"
+    ],
+    "idle_temperature": "0",
+    "nozzle_temperature_range_low": [
+     "220"
+    ],
+    "nozzle_temperature_range_high": [
+     "260"
+    ],
+    "default_filament_colour": "#FF8000",
+    "filament_notes": [
+     ""
+    ],
+    "filament_ramming_parameters": [
+     "250 100 42.4 42.4 42.4 42.4 42.4 | 0.05 42.4 0.45 42.4 0.95 42.4 1.45 42.4 1.95 42.4 2.45 42.4 2.95 42.4 3.45 42.4 3.95 42.4 4.45 42.4 4.95 42.4"
+    ]
+   }
+  },
+  "PLA": {
+   "id": "Prusa Generic PLA @MK4S",
+   "values": {
+    "cool_plate_temp": [
+     "35"
+    ],
+    "eng_plate_temp": [
+     "0"
+    ],
+    "hot_plate_temp": [
+     "60"
+    ],
+    "cool_plate_temp_initial_layer": [
+     "35"
+    ],
+    "eng_plate_temp_initial_layer": [
+     "0"
+    ],
+    "hot_plate_temp_initial_layer": [
+     "60"
+    ],
+    "overhang_fan_threshold": [
+     "50%"
+    ],
+    "overhang_fan_speed": [
+     "100"
+    ],
+    "slow_down_for_layer_cooling": [
+     "1"
+    ],
+    "close_fan_the_first_x_layers": [
+     "1"
+    ],
+    "filament_end_gcode": [
+     "; Filament-specific end gcode"
+    ],
+    "filament_flow_ratio": [
+     "1"
+    ],
+    "reduce_fan_stop_start_freq": [
+     "1"
+    ],
+    "fan_cooling_layer_time": "17",
+    "filament_cost": "25.4",
+    "filament_density": [
+     "1.24"
+    ],
+    "filament_deretraction_speed": [
+     "nil"
+    ],
+    "filament_diameter": [
+     "1.75"
+    ],
+    "filament_max_volumetric_speed": "15",
+    "filament_minimal_purge_on_wipe_tower": [
+     "15"
+    ],
+    "filament_retraction_minimum_travel": [
+     "nil"
+    ],
+    "filament_retract_before_wipe": [
+     "nil"
+    ],
+    "filament_retract_when_changing_layer": [
+     "nil"
+    ],
+    "filament_retraction_length": [
+     "nil"
+    ],
+    "filament_z_hop": [
+     "nil"
+    ],
+    "filament_retract_restart_extra": [
+     "nil"
+    ],
+    "filament_retraction_speed": [
+     "nil"
+    ],
+    "filament_soluble": [
+     "0"
+    ],
+    "filament_type": [
+     "PLA"
+    ],
+    "filament_vendor": [
+     "Generic"
+    ],
+    "filament_wipe": [
+     "nil"
+    ],
+    "filament_wipe_distance": [
+     "nil"
+    ],
+    "nozzle_temperature_initial_layer": "230",
+    "full_fan_speed_layer": "3",
+    "fan_max_speed": [
+     "100"
+    ],
+    "fan_min_speed": "70",
+    "slow_down_min_speed": "20",
+    "slow_down_layer_time": "6",
+    "filament_start_gcode": [
+     "M900 K{if nozzle_diameter[filament_extruder_id]==0.4}0.05{elsif nozzle_diameter[filament_extruder_id]==0.25}0.14{elsif nozzle_diameter[filament_extruder_id]==0.3}0.07{elsif nozzle_diameter[filament_extruder_id]==0.35}0.06{elsif nozzle_diameter[filament_extruder_id]==0.6}0.03{elsif nozzle_diameter[filament_extruder_id]==0.5}0.035{elsif nozzle_diameter[filament_extruder_id]==0.8}0.015{else}0{endif} ; Filament gcode\n\n{if printer_notes=~/.*(MK4IS|XLIS|MK4S|MK3.9S).*/}\nM572 S{if nozzle_diameter[filament_extruder_id]==0.4}0.036{elsif nozzle_diameter[filament_extruder_id]==0.5}0.025{elsif nozzle_diameter[filament_extruder_id]==0.6}0.02{elsif nozzle_diameter[filament_extruder_id]==0.8}0.014{elsif nozzle_diameter[filament_extruder_id]==0.25}0.12{elsif nozzle_diameter[filament_extruder_id]==0.3}0.08{else}0{endif} ; Filament gcode\n{endif}\n\nM142 S36 ; set heatbreak target temp"
+    ],
+    "nozzle_temperature": [
+     "220"
+    ],
+    "temperature_vitrification": [
+     "60"
+    ],
+    "idle_temperature": "0",
+    "nozzle_temperature_range_low": [
+     "190"
+    ],
+    "nozzle_temperature_range_high": [
+     "230"
+    ],
+    "additional_cooling_fan_speed": [
+     "70"
+    ],
+    "default_filament_colour": "#FF8000",
+    "filament_notes": [
+     ""
+    ],
+    "filament_ramming_parameters": [
+     "250 100 40 40 40 40 40 | 0.05 40 0.45 40 0.95 40 1.45 40 1.95 40 2.45 40 2.95 40 3.45 40 3.95 40 4.45 40 4.95 40"
+    ]
+   }
+  }
+ },
+ "defaults": {
+  "sparse_infill_pattern": "gyroid",
+  "support_interface_top_layers": "3",
+  "support_top_z_distance": "0.25"
+ }
+}
