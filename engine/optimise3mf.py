@@ -22,6 +22,7 @@ value (we never coarsen below the designer's choice except in speed mode).
 Geometry is never modified, hash-verified on every run.
 """
 import argparse, hashlib, json, math, os, re, shutil, sys, tempfile, zipfile
+import meshimport
 import mixer
 import xml.etree.ElementTree as ET
 
@@ -1940,6 +1941,111 @@ def inject_object_layer_height(xml_text, objid, value):
     return xml_text[:m.start(1)] + block + xml_text[m.end(1):], True
 
 
+# ------------------------- importing OBJ and STL -------------------------
+MESH_EXTS = ('.obj', '.stl')
+
+
+def _ask(prompt, options, default):
+    """Ask on a terminal, refuse in anything else.
+
+    Guessing is the one thing this must not do: a wrongly scaled or wrongly
+    turned model wastes a whole print and looks entirely plausible until it
+    comes off the plate. When there is nobody to ask, say what to pass instead
+    of picking."""
+    if not sys.stdin.isatty():
+        sys.exit(prompt + '\n' + 'Not a terminal, so nothing can be asked. '
+                 'Pass the answer explicitly: ' + ', '.join(options))
+    print(prompt)
+    while True:
+        got = input('  [%s] (default %s): ' % ('/'.join(options), default)).strip().lower()
+        if not got:
+            return default
+        if got in options:
+            return got
+        print('  one of: ' + ', '.join(options))
+
+
+def decide_units(verts, unit_flag, name):
+    cands = meshimport.unit_candidates(verts)
+    d = meshimport.dims(verts)
+    if unit_flag:
+        return meshimport.MM_PER[unit_flag], unit_flag
+    good = [c for c in cands if c['plausible']]
+    if len(good) == 1:
+        c = good[0]
+        if c['unit'] != 'mm':
+            print('%s: reading as %s gives %.0f x %.0f x %.0fmm, the only '
+                  'printable size' % (name, c['unit'], *c['dims']))
+        return c['factor'], c['unit']
+    lines = ['%s carries no units, and %.4g x %.4g x %.4g could be any of these:'
+             % (name, *d)]
+    for c in cands:
+        lines.append('    %-5s %8.1f x %8.1f x %8.1fmm%s'
+                     % (c['unit'], *c['dims'],
+                        '' if c['plausible'] else '   (not a printable size)'))
+    lines.append('  Which did its author work in?')
+    choice = _ask('\n'.join(lines), [c['unit'] for c in cands],
+                  (good[0]['unit'] if good else 'mm'))
+    return meshimport.MM_PER[choice], choice
+
+
+def decide_up(verts, up_flag, name, ext):
+    """Z up or Y up. STL is nearly always Z up already because it comes out of
+    CAD; OBJ usually is not, because it comes out of a modelling tool."""
+    if up_flag:
+        return up_flag
+    if not meshimport.looks_y_up(verts):
+        return 'z'
+    d = meshimport.dims(verts)
+    t = meshimport.dims(meshimport.to_z_up(verts))
+    return _ask(
+        '%s is taller across Y than Z, which usually means a Y up export.\n'
+        '    as it is    %.0f x %.0f x %.0f  (%.0f tall)\n'
+        '    turned Z up %.0f x %.0f x %.0f  (%.0f tall)\n'
+        '  Which way up is it?' % (name, *d, d[2], *t, t[2]),
+        ['z', 'y'], 'y' if ext == '.obj' else 'z')
+
+
+def import_mesh(path, rec, unit_flag, up_flag, tmpdir):
+    """An OBJ or STL as a 3mf Prism can then treat like any other project."""
+    name = os.path.basename(path)
+    objects, colours, warns = meshimport.read_mesh_file(path)
+    for w in warns:
+        print('%s: %s' % (name, w))
+    allv = [v for (vs, _t, _c) in objects for v in vs]
+    if not allv:
+        sys.exit('%s: no geometry found in it' % name)
+    ext = os.path.splitext(path)[1].lower()
+    up = decide_up(allv, up_flag, name, ext)
+    if up == 'y':
+        objects = [(meshimport.to_z_up(vs), t, c) for (vs, t, c) in objects]
+        allv = meshimport.to_z_up(allv)
+    factor, unit = decide_units(allv, unit_flag, name)
+    # Scale every object against the WHOLE model's floor, or parts split by
+    # material would each be seated separately and the model would come apart.
+    scaled = meshimport.scale_and_seat(allv, factor)
+    lo, _ = meshimport.bbox([(v[0] * factor, v[1] * factor, v[2] * factor)
+                             for v in allv])
+    objects = [([(v[0] * factor - lo[0], v[1] * factor - lo[1],
+                  v[2] * factor - lo[2]) for v in vs], t, c)
+               for (vs, t, c) in objects]
+    d = meshimport.dims(scaled)
+    bits = ['%s: imported as %.0f x %.0f x %.0fmm' % (name, *d)]
+    if unit != 'mm':
+        bits.append('read as %s' % unit)
+    if up == 'y':
+        bits.append('turned Z up')
+    if len(objects) > 1:
+        bits.append('%d materials kept as separate objects' % len(objects))
+    print(', '.join(bits))
+    if any(d[i] > rec['bed'][i] for i in range(3)):
+        print('  it is larger than the %s plate (%.0f x %.0f x %.0fmm)'
+              % (rec['label'], *rec['bed']))
+    out = os.path.join(tmpdir, os.path.splitext(name)[0] + '.3mf')
+    meshimport.write_3mf(out, objects)
+    return out
+
+
 def convert(src_path, rec, key, mode, single, dome_override, skip_analyse,
             out_path=None, spectrum=None, keep_source=False, overrides=None,
             supports=None, orient=False):
@@ -2173,6 +2279,10 @@ def main():
                          "(default: half the layer height, which hides flat-face banding)")
     ap.add_argument('--spectrum-list', action='store_true',
                     help='print every colour this printer can make, then exit')
+    ap.add_argument('--units', choices=sorted(meshimport.MM_PER),
+                    help='units an imported .obj or .stl was drawn in')
+    ap.add_argument('--up', choices=('z', 'y'),
+                    help='which axis is up in an imported .obj or .stl')
     ap.add_argument('--fix', metavar='SYMPTOM',
                     help='what causes a problem, checked against your file')
     ap.add_argument('--explain', metavar='SETTING',
@@ -2412,8 +2522,25 @@ def main():
     if a.out and len(a.files) > 1:
         ap.error('--out only valid with a single input file')
     for f in a.files:
-        convert(os.path.abspath(f), rec, key, mode, single, a.dome,
-                a.no_analyse, a.out, spectrum, a.keep_source, overrides,
+        src = os.path.abspath(f)
+        # NB: a LOCAL out path. Assigning to a.out here made the second
+        # imported file write over the first, so converting two meshes left
+        # one file and said nothing. Fourth bug today from rebinding a name
+        # that something else was still reading.
+        out_path = a.out
+        if os.path.splitext(src)[1].lower() in MESH_EXTS:
+            # Imported into a temp 3mf, then converted exactly like any other
+            # project, so every later step is the same code.
+            imported = import_mesh(src, rec, a.units, a.up, tempfile.mkdtemp())
+            if not out_path:
+                # Name the result after the ORIGINAL, not the temp file.
+                out_path = os.path.join(
+                    os.path.dirname(src),
+                    '%s - %s.3mf' % (os.path.splitext(os.path.basename(src))[0],
+                                     key.upper()))
+            src = imported
+        convert(src, rec, key, mode, single, a.dome,
+                a.no_analyse, out_path, spectrum, a.keep_source, overrides,
                 a.supports,
                 'apply' if a.orient_apply else ('suggest' if a.orient else None))
 

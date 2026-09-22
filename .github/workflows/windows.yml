@@ -33,6 +33,7 @@ jobs:
             --hidden-import gui `
             --hidden-import optimise3mf `
             --hidden-import mixer `
+            --hidden-import meshimport `
             windows/prism_win.py
 
       - name: Smoke test the binary
@@ -161,6 +162,7 @@ jobs:
             --hidden-import gui \
             --hidden-import optimise3mf \
             --hidden-import mixer \
+            --hidden-import meshimport \
             linux/prism_linux.py
 
       - name: Smoke test the binary

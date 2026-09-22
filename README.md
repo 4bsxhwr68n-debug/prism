@@ -160,6 +160,33 @@ anything, naming each colour it cannot reach and what it would use instead.
 
 **[Full colour and painting guide](docs/COLOUR.md)** covers the rest.
 
+## Bringing in an OBJ or an STL
+
+    prism --printer k2 thing.stl
+    prism --printer u1 sculpt.obj --spectrum
+
+Prism reads both and writes a project for your printer, then everything else
+applies: supports worked out from the shape, orientation advice, mesh health.
+An `.obj` with an `.mtl` beside it keeps its materials as separate objects, so
+their colours feed straight into colour matching and Full Spectrum blending.
+
+**It will ask you two things, and it will not guess them.** Neither answer is
+in the file, and both produce a result that looks entirely plausible and is
+wrong.
+
+    thing.obj carries no units, and 20 x 15 x 40 could be any of these:
+        mm        20.0 x     15.0 x     40.0mm
+        cm       200.0 x    150.0 x    400.0mm
+        inch     508.0 x    381.0 x   1016.0mm
+        m      20000.0 x  15000.0 x  40000.0mm   (not a printable size)
+      Which did its author work in?
+
+An OBJ or STL is bare numbers, so the same file is a trinket or a monument
+depending on what its author had in mind. And printing is Z up while most
+modelling tools export Y up, which if taken wrong lays the model on its side
+and quietly ruins every overhang and support decision after it. Answer at the
+prompt, or pass `--units` and `--up` and never see it.
+
 ## When you do not know what a setting does
 
 A Creality K2 profile has 575 settings and the slicer explains almost none of
@@ -231,6 +258,8 @@ also caps its minimum, since the cooling logic ramps between the two.
     --fan / --aux-fan / --overhang-fan N
     --infill / --infill-density / --walls / --top-layers / --bottom-layers
     --interface-layers / --top-z / --support-style / --seam / --brim
+    --units mm|cm|m|inch         units an imported .obj or .stl was drawn in
+    --up z|y                     which axis is up in one
     --explain SETTING            what a setting does and how to use it
     --fix SYMPTOM                what causes a problem, checked against your file
     --colour-preview             what this model's colours become, before converting
