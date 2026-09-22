@@ -56,6 +56,21 @@
   "use": "3 to 5mm handles most adhesion problems. Wider rarely helps if the first layer itself is the problem.",
   "what": "How far the brim extends from the part."
  },
+ "enable_support": {
+  "aliases": [
+   "enable support",
+   "enable_support",
+   "supports on",
+   "turn on supports",
+   "use supports"
+  ],
+  "cost": "Supports are material and time you throw away, and they mark the surface they touch. The cost of leaving them off when they were needed is the whole print.",
+  "label": "Enable support",
+  "less": "Off, and nothing is generated at all, so a steep overhang prints into thin air and usually curls.",
+  "more": "On, and the other support settings start applying. Nothing is generated unless an overhang actually crosses the threshold angle.",
+  "use": "Let Prism decide instead: it measures every overhang, works out how far each one has to reach, and turns supports on only where the shape genuinely needs them.",
+  "what": "The master switch for supports. Off means overhangs print unaided, whatever the other support settings say."
+ },
  "fan_max_speed": {
   "aliases": [
    "cooling fan",

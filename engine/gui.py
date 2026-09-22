@@ -149,6 +149,13 @@ def palette(key):
 # The last field is the point: most people meet these settings without ever
 # being told what they change, so the panel explains rather than just exposes.
 QUICK = [
+ ('layer_height', 'Layer height', 'num', 'Layer height',
+  'How thick each printed layer is, and the biggest single lever on both '
+  'quality and time. Thinner means smoother curves and finer detail, and '
+  'proportionally longer: halving it roughly doubles the print. It does '
+  'nothing for detail sideways, only vertically. NOTE: the Speed, Balanced '
+  'and Quality buttons above set this for you. Putting a value here overrides '
+  'whichever you picked, so leave it blank unless you want a specific height.'),
  ('fan_max_speed', 'Part cooling fan', 'pctslider', 'Fan max speed',
   'The fan blowing on the part as it prints. Cooling sets plastic fast, which '
   'helps overhangs and fine detail, but too much of it weakens the bond between '
@@ -174,6 +181,12 @@ QUICK = [
  ('wall_loops', 'Walls', 'int', 'Wall loops',
   'How many perimeters make the skin. Adding a wall buys far more strength than '
   'adding infill, for less time. Two is normal, three for anything load bearing.'),
+ ('wall_generator', 'Wall generator', 'enum', 'Wall generator',
+  'The algorithm that lays out the perimeters. Arachne varies wall width to '
+  'fit thin features, so lettering, thin ribs and sharp corners come out '
+  'properly instead of being skipped where the geometry is narrower than one '
+  'wall. Classic keeps every wall the same width. Prefer Arachne unless '
+  'something specific misbehaves; it costs nothing.'),
  ('top_shell_layers', 'Top layers', 'int', 'Top shell layers',
   'Solid layers closing the top. Too few and the infill shows through as '
   'pinholes or a quilted texture. Five is a safe default at 0.2mm.'),
@@ -184,6 +197,12 @@ QUICK = [
   'Whether anything is printed to hold up overhangs. Prism can work this out '
   'from the model itself, adding them only where the geometry cannot hold '
   'itself up.'),
+ ('support_type', 'Support type', 'enum', 'Support type',
+  'What kind of scaffolding is built under overhangs, if any. Normal supports '
+  'are simple columns and easy to remove. Tree supports branch up to only the '
+  'points that need them, touch far less of the surface and peel away more '
+  'cleanly, which suits figures and organic shapes. Supports are material and '
+  'time you throw away, and they always mark whatever they touch.'),
  ('support_threshold_angle', 'Support threshold', 'int', 'Support threshold angle',
   'Overhangs shallower than this angle get supported. Lower means fewer '
   'supports and more trust in the printer to bridge. 30 degrees is the usual '
@@ -199,6 +218,22 @@ QUICK = [
  ('support_style', 'Support style', 'enum', 'Support style',
   'Tree supports use less material and touch the model in fewer places, which '
   'is kinder to the surface. Grid is more reliable under a large flat ceiling.'),
+ ('support_on_build_plate_only', 'Supports from the plate only', 'bool',
+  'Support on build plate only',
+  'Whether supports may stand on the model itself or only rise from the bed. '
+  'On is the safer choice: a support resting on the model always marks it, and '
+  'those are the ones that wobble and fail partway up, taking the print with '
+  'them. Turn it off only when a feature genuinely overhangs another part of '
+  'the same model with no path down to the plate.'),
+ ('brim_type', 'Brim', 'enum', 'Brim type',
+  'A flat skirt printed around the first layer to hold the part down. Worth it '
+  'for tall thin parts, small footprints and anything prone to lifting at the '
+  'corners. It is the cheapest insurance against a print coming loose: a few '
+  'grams and a little cleanup against losing the whole thing.'),
+ ('brim_width', 'Brim width', 'num', 'Brim width',
+  'How far the brim reaches out from the part. 3 to 5mm handles most adhesion '
+  'trouble. Wider rarely helps if the real problem is the first layer itself, '
+  'and leaves more to cut away afterwards.'),
  ('seam_position', 'Seam position', 'enum', 'Seam position',
   'Where each layer starts and stops, visible as a faint line up the side. '
   'Aligned stacks them into one tidy seam you can hide; random scatters them so '
