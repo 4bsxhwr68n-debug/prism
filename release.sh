@@ -10,7 +10,11 @@ TMP="$(mktemp -d)"
 # Without this the macOS zip ships needing Python on the user's Mac, which
 # /usr/bin/python3 is not unless they have Xcode. Cheap to rebuild, ruinous to
 # forget.
-[ -x "$HERE/macos/dist/prism-engine" ] || "$HERE/macos/build-engine.sh"
+# ALWAYS, not "if missing". The || form skipped the rebuild whenever a binary
+# from an earlier session was lying there, and shipped it: a v1.0.7 candidate
+# was built with an engine 11 hours older than its own source, advertising
+# features it did not contain. Ten seconds against publishing a lie.
+"$HERE/macos/build-engine.sh"
 "$HERE/macos/build.sh" "$TMP/Prism.app"
 # Notarise before zipping, so the ticket is stapled inside the bundle the user
 # downloads. Skipped without a Developer ID, which still produces a working

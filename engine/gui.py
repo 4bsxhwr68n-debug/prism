@@ -72,8 +72,8 @@ def pick_files():
         return []
     if sys.platform == 'darwin':
         script = ('try\n'
-                  'set fs to choose file with prompt "Choose 3MF files to optimise"'
-                  ' of type {"3mf"} with multiple selections allowed\n'
+                  'set fs to choose file with prompt "Choose models to optimise"'
+                  ' of type {"3mf", "obj", "stl"} with multiple selections allowed\n'
                   'set out to ""\n'
                   'repeat with f in fs\n'
                   'set out to out & POSIX path of f & linefeed\n'
