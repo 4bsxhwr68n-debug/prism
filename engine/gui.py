@@ -377,12 +377,15 @@ explains almost none of them. Ask about any of them by the name you know it by.<
 <pre id="fxout" hidden></pre>
 </details></div>
 
-<div class="card" id="c5"><details id="adv"><summary>Advanced settings</summary>
+<div class="card" id="c5"><details id="adv"><summary>Advanced settings<span id="advcount"></span></summary>
 <p class="hint" style="margin-top:4px">Blank uses the value shown. Prism's own
 choices are marked; clearing one back to blank restores it. Every setting has an
 <span class="i" style="cursor:default">i</span> explaining what it changes in the
 slicer and why it matters.</p>
 <button id="explain" style="margin-top:2px">Explain every setting</button>
+<p class="hint" id="advwait">These appear once you choose a printer above, because
+what a setting accepts, and what it is set to now, are its answers and not
+Prism's.</p>
 <div class="grid" id="advgrid"></div>
 <label class="lbl" for="extra" style="margin-top:14px">Anything else, one
 <code>key=value</code> per line</label>
@@ -468,8 +471,15 @@ api('/api/printers').then(r=>{const s=document.getElementById('printer');
   else loadPalette();
   loadSettings();refresh();analyse();};});
 
-function loadSettings(){if(!S.printer)return;
+function loadSettings(){
+ const wait=document.getElementById('advwait');
+ if(!S.printer){wait.hidden=false;document.getElementById('advgrid').innerHTML='';return;}
  api('/api/settings',{printer:S.printer}).then(r=>{
+  wait.hidden=!!(r.rows&&r.rows.length);
+  if(!r.rows||!r.rows.length){
+   wait.textContent='No settings could be read for this printer.';
+   document.getElementById('advgrid').innerHTML='';return;}
+  document.getElementById('advcount').textContent=' ('+r.rows.length+')';
   document.getElementById('advgrid').innerHTML=r.rows.map((f,i)=>{
    const mark=f.prism?' <span class="mark">Prism</span>':'';
    const ctl=f.kind==='pctslider'
