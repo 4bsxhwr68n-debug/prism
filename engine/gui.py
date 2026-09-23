@@ -61,15 +61,21 @@ LINUX_PICKERS = [
 
 
 def pick_files():
-    """Native multi-select file dialog. Returns absolute paths."""
+    """Native multi-select file dialog.
+
+    Returns (paths, note). A note is something to tell the person: this used to
+    return an empty list whether they cancelled or the dialog never opened, so
+    a picker that died reported exactly what a cancel reports, and "nothing
+    happens when I click" was the only symptom anyone could describe."""
     if sys.platform.startswith('linux'):
         for cmd in LINUX_PICKERS:
             if not shutil.which(cmd[0]):
                 continue
             p = subprocess.run(cmd, capture_output=True, text=True)
-            return [l for l in p.stdout.replace('|', '\n').splitlines()
-                    if l.strip() and os.path.exists(l.strip())]
-        return []
+            return ([l for l in p.stdout.replace('|', '\n').splitlines()
+                     if l.strip() and os.path.exists(l.strip())], None)
+        return [], ('No file dialog found. Install zenity, kdialog or yad, or '
+                    'pass files on the command line.')
     if sys.platform == 'darwin':
         script = ('try\n'
                   'set fs to choose file with prompt "Choose models to optimise"'
@@ -84,15 +90,46 @@ def pick_files():
                   'end try')
         p = subprocess.run(['osascript', '-e', script],
                            capture_output=True, text=True)
-        return [l for l in p.stdout.splitlines() if l.strip()]
-    ps = ("Add-Type -AssemblyName System.Windows.Forms;"
-          "$d = New-Object System.Windows.Forms.OpenFileDialog;"
-          "$d.Filter = 'Models (*.3mf;*.obj;*.stl)|*.3mf;*.obj;*.stl';"
-          "$d.Multiselect = $true;"
-          "if ($d.ShowDialog() -eq 'OK') { $d.FileNames -join [Environment]::NewLine }")
-    p = subprocess.run(['powershell', '-NoProfile', '-STA', '-Command', ps],
-                       capture_output=True, text=True)
-    return [l for l in p.stdout.splitlines() if l.strip()]
+        if p.returncode and not p.stdout.strip():
+            return [], 'The file dialog did not open: %s' % (
+                (p.stderr or '').strip().splitlines()[-1:] or ['unknown'])[0][:120]
+        return [l for l in p.stdout.splitlines() if l.strip()], None
+
+    # Windows. Run a SCRIPT FILE rather than -Command: everything after
+    # -Command is re-joined and re-parsed by PowerShell, so a filter carrying
+    # semicolons, parentheses and a pipe is at the mercy of that. A file has no
+    # quoting layer at all.
+    #
+    # The filter is also set inside a try: OpenFileDialog validates it on
+    # assignment and THROWS on anything it dislikes, which would kill the
+    # script before ShowDialog and open no dialog whatsoever. An unfiltered
+    # dialog is a far better failure than no dialog.
+    script = (
+        'Add-Type -AssemblyName System.Windows.Forms\n'
+        '$d = New-Object System.Windows.Forms.OpenFileDialog\n'
+        '$d.Title = "Choose models to optimise"\n'
+        'try { $d.Filter = "Models|*.3mf;*.obj;*.stl|All files|*.*" } catch { }\n'
+        '$d.Multiselect = $true\n'
+        'if ($d.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {\n'
+        '  $d.FileNames -join [Environment]::NewLine\n'
+        '}\n')
+    fh = tempfile.NamedTemporaryFile('w', suffix='.ps1', delete=False,
+                                     encoding='utf-8')
+    try:
+        fh.write(script); fh.close()
+        p = subprocess.run(['powershell', '-NoProfile', '-STA',
+                            '-ExecutionPolicy', 'Bypass', '-File', fh.name],
+                           capture_output=True, text=True)
+    finally:
+        try:
+            os.unlink(fh.name)
+        except OSError:
+            pass
+    files = [l.strip() for l in p.stdout.splitlines() if l.strip()]
+    if not files and (p.returncode or (p.stderr or '').strip()):
+        err = ((p.stderr or '').strip().splitlines() or ['no output'])[-1]
+        return [], 'The file dialog did not open: %s' % err[:140]
+    return files, None
 
 
 def reveal(path):
@@ -752,13 +789,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
         files = [f for f in (body.get('files') or []) if os.path.exists(f)]
         try:
             if path == '/api/pick':
-                picked = pick_files()
-                note = ''
-                if not picked and sys.platform.startswith('linux') and \
-                        not any(shutil.which(c[0]) for c in LINUX_PICKERS):
-                    note = ('No file dialog found. Install zenity, kdialog or '
-                            'yad, or pass files on the command line.')
-                self._send(json.dumps({'files': picked, 'note': note}))
+                # The note is whatever the picker could not do, which the page
+                # shows instead of leaving the button looking inert.
+                picked, note = pick_files()
+                self._send(json.dumps({'files': picked, 'note': note or ''}))
             elif path == '/api/settings':
                 self._send(json.dumps(settings_for(body.get('printer', ''))))
             elif path == '/api/palette':
