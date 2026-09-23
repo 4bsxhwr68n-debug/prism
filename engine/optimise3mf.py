@@ -2167,6 +2167,35 @@ def import_mesh(path, rec, unit_flag, up_flag, tmpdir):
     return out
 
 
+def _check_workspace():
+    """A usable temp directory, or a plain sentence about why not.
+
+    A 3mf is a zip and every operation unpacks one, so with a full disk there
+    is nothing this tool can do. Python's own message for that is a traceback
+    ending in "No usable temporary directory found", which is accurate and
+    tells a person nothing they can act on. A frozen build fails even earlier,
+    because a PyInstaller binary unpacks ITSELF into the same place, so the app
+    falls back to system Python and the traceback names an interpreter the
+    person did not know they were using."""
+    try:
+        d = tempfile.mkdtemp(prefix='3mfchk_')
+    except Exception:
+        sys.exit('There is no usable temporary directory, which almost always '
+                 'means the disk is full.\n'
+                 'Prism unpacks every 3mf to work on it, so it needs room.\n'
+                 'Free some space and try again.')
+    try:
+        with open(os.path.join(d, 'probe'), 'wb') as fh:
+            fh.write(b'0' * 1024)
+    except OSError as e:
+        sys.exit('The temporary directory cannot be written to (%s), which '
+                 'almost always means the disk is full.\n'
+                 'Prism unpacks every 3mf to work on it, so it needs room.\n'
+                 'Free some space and try again.' % e.strerror)
+    finally:
+        shutil.rmtree(d, ignore_errors=True)
+
+
 def convert(src_path, rec, key, mode, single, dome_override, skip_analyse,
             out_path=None, spectrum=None, keep_source=False, overrides=None,
             supports=None, orient=False):
@@ -2175,6 +2204,7 @@ def convert(src_path, rec, key, mode, single, dome_override, skip_analyse,
     out_path = out_path or os.path.join(os.path.dirname(src_path),
                                         f"{stem} - {suffix}.3mf")
     notes, report = [], []
+    _check_workspace()
     tmp = tempfile.mkdtemp(prefix='3mfopt_')
     try:
         with zipfile.ZipFile(src_path) as z:
