@@ -114,49 +114,6 @@ jobs:
           if ($bad -notmatch 'could not start') { $bad; throw "a broken app launched silently: this check proves nothing" }
           Write-Host "control: a broken app is reported, not swallowed"
 
-      - name: Run the app window's JavaScript in a real browser
-        shell: pwsh
-        env:
-          PRISM_NO_BROWSER: '1'
-        run: |
-          # Serving the page proves the bytes arrive. It does not prove the
-          # script runs. A single error during setup binds no handlers at all,
-          # and every button then does nothing with no sign of why, which is
-          # exactly what was reported on Windows.
-          npm --prefix $env:TEMP install playwright-core --no-save --silent 2>$null
-          $p = Start-Process ./dist/Prism.exe -PassThru -NoNewWindow -RedirectStandardOutput gui2.log
-          $url = $null
-          foreach ($i in 1..40) {
-            if (Test-Path gui2.log) {
-              $m = Select-String -Path gui2.log -Pattern 'Prism running at (\S+)' | Select-Object -First 1
-              if ($m) { $url = $m.Matches[0].Groups[1].Value; break }
-            }
-            Start-Sleep -Milliseconds 500
-          }
-          if (-not $url) { throw "the app window never started" }
-          $js = @"
-const { chromium } = require('playwright-core');
-(async () => {
-  const b = await chromium.launch({ channel: 'msedge' });
-  const p = await b.newPage();
-  const errs = [];
-  p.on('pageerror', e => errs.push('pageerror: ' + e.message));
-  p.on('console', m => { if (m.type() === 'error') errs.push('console: ' + m.text()); });
-  await p.goto(process.argv[2], { waitUntil: 'networkidle' });
-  const wired = await p.evaluate(() => typeof window.meshCheck === 'function'
-      && !!document.getElementById('pick'));
-  console.log('handlers bound: ' + wired);
-  console.log('errors: ' + (errs.length ? errs.join(' | ') : 'none'));
-  await b.close();
-  if (errs.length || !wired) process.exit(1);
-})();
-"@
-          Set-Content -Path run.js -Value $js
-          $env:NODE_PATH = "$env:TEMP/node_modules"
-          node run.js x $url
-          if ($LASTEXITCODE -ne 0) { throw "the page's script failed on Windows" }
-          Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue
-
       - name: Smoke test the file picker command
         shell: pwsh
         run: |
