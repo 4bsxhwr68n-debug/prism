@@ -60,6 +60,17 @@ LINUX_PICKERS = [
 ]
 
 
+WIN_PICKER_PS = (
+    'Add-Type -AssemblyName System.Windows.Forms\n'
+    '$d = New-Object System.Windows.Forms.OpenFileDialog\n'
+    '$d.Title = "Choose models to optimise"\n'
+    'try { $d.Filter = "Models|*.3mf;*.obj;*.stl|All files|*.*" } catch { }\n'
+    '$d.Multiselect = $true\n'
+    'if ($d.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {\n'
+    '  $d.FileNames -join [Environment]::NewLine\n'
+    '}\n')
+
+
 def pick_files():
     """Native multi-select file dialog.
 
@@ -104,15 +115,7 @@ def pick_files():
     # assignment and THROWS on anything it dislikes, which would kill the
     # script before ShowDialog and open no dialog whatsoever. An unfiltered
     # dialog is a far better failure than no dialog.
-    script = (
-        'Add-Type -AssemblyName System.Windows.Forms\n'
-        '$d = New-Object System.Windows.Forms.OpenFileDialog\n'
-        '$d.Title = "Choose models to optimise"\n'
-        'try { $d.Filter = "Models|*.3mf;*.obj;*.stl|All files|*.*" } catch { }\n'
-        '$d.Multiselect = $true\n'
-        'if ($d.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {\n'
-        '  $d.FileNames -join [Environment]::NewLine\n'
-        '}\n')
+    script = WIN_PICKER_PS
     fh = tempfile.NamedTemporaryFile('w', suffix='.ps1', delete=False,
                                      encoding='utf-8')
     try:

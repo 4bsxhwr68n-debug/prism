@@ -118,29 +118,33 @@ jobs:
         shell: pwsh
         run: |
           # The picker needs a human to click it, so CI cannot open the dialog.
-          # It CAN check that the command PowerShell is handed actually parses
-          # and that the dialog object accepts the filter, which is the half
-          # that broke: a filter string is silently rejected at assignment and
-          # the button then does nothing at all.
-          $src = Get-Content engine/gui.py -Raw
-          if ($src -notmatch "(?s)ps = \((.*?)\)\r?\n") { throw "could not find the picker command" }
-          $parts = $matches[1] -split "`n" | ForEach-Object { $_.Trim() } | Where-Object { $_ }
-          $cmd = ($parts | ForEach-Object { $_.Trim('"') }) -join ''
-          Write-Host "command: $cmd"
+          # It can check the two things that break it silently: whether the
+          # script PowerShell is given parses, and whether OpenFileDialog
+          # accepts the filter, which it validates on assignment and rejects by
+          # throwing. A rejected filter kills the script before ShowDialog and
+          # the button then does nothing, with no error a user can see.
+          #
+          # Read the script from the module rather than grepping for a shape.
+          # The previous version of this check looked for "ps = (" and silently
+          # stopped matching when that code changed, which failed the build and
+          # cost a release its Windows binary.
+          python -c "import sys; sys.path.insert(0,'engine'); import gui; sys.stdout.write(gui.WIN_PICKER_PS)" > picker.ps1
+          if (-not (Test-Path picker.ps1) -or (Get-Item picker.ps1).Length -lt 50) {
+            throw "could not read WIN_PICKER_PS from engine/gui.py"
+          }
+          Get-Content picker.ps1 | ForEach-Object { Write-Host "  $_" }
           $errors = $null
-          [System.Management.Automation.Language.Parser]::ParseInput($cmd, [ref]$null, [ref]$errors) | Out-Null
-          if ($errors.Count) { $errors | ForEach-Object { Write-Host $_.Message }; throw "picker command does not parse" }
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path picker.ps1), [ref]$null, [ref]$errors) | Out-Null
+          if ($errors.Count) { $errors | ForEach-Object { Write-Host $_.Message }; throw "picker script does not parse" }
           Write-Host "parses cleanly"
-          # And the filter itself: OpenFileDialog validates it on assignment and
-          # throws when the pattern count does not match the description count.
           Add-Type -AssemblyName System.Windows.Forms
           $d = New-Object System.Windows.Forms.OpenFileDialog
-          if ($cmd -match "Filter = '([^']*)'") {
-            $f = $matches[1]
-            Write-Host "filter: $f"
-            try { $d.Filter = $f; Write-Host "filter accepted" }
+          $f = (Get-Content picker.ps1 -Raw)
+          if ($f -match 'Filter = "([^"]*)"') {
+            try { $d.Filter = $matches[1]; Write-Host "filter accepted: $($matches[1])" }
             catch { throw "OpenFileDialog REJECTED the filter: $($_.Exception.Message)" }
-          } else { throw "no filter found in the picker command" }
+          } else { throw "no filter found in the picker script" }
 
       - name: Package
         shell: pwsh
