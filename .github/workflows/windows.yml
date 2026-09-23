@@ -114,6 +114,34 @@ jobs:
           if ($bad -notmatch 'could not start') { $bad; throw "a broken app launched silently: this check proves nothing" }
           Write-Host "control: a broken app is reported, not swallowed"
 
+      - name: Smoke test the file picker command
+        shell: pwsh
+        run: |
+          # The picker needs a human to click it, so CI cannot open the dialog.
+          # It CAN check that the command PowerShell is handed actually parses
+          # and that the dialog object accepts the filter, which is the half
+          # that broke: a filter string is silently rejected at assignment and
+          # the button then does nothing at all.
+          $src = Get-Content engine/gui.py -Raw
+          if ($src -notmatch "(?s)ps = \((.*?)\)\r?\n") { throw "could not find the picker command" }
+          $parts = $matches[1] -split "`n" | ForEach-Object { $_.Trim() } | Where-Object { $_ }
+          $cmd = ($parts | ForEach-Object { $_.Trim('"') }) -join ''
+          Write-Host "command: $cmd"
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseInput($cmd, [ref]$null, [ref]$errors) | Out-Null
+          if ($errors.Count) { $errors | ForEach-Object { Write-Host $_.Message }; throw "picker command does not parse" }
+          Write-Host "parses cleanly"
+          # And the filter itself: OpenFileDialog validates it on assignment and
+          # throws when the pattern count does not match the description count.
+          Add-Type -AssemblyName System.Windows.Forms
+          $d = New-Object System.Windows.Forms.OpenFileDialog
+          if ($cmd -match "Filter = '([^']*)'") {
+            $f = $matches[1]
+            Write-Host "filter: $f"
+            try { $d.Filter = $f; Write-Host "filter accepted" }
+            catch { throw "OpenFileDialog REJECTED the filter: $($_.Exception.Message)" }
+          } else { throw "no filter found in the picker command" }
+
       - name: Package
         shell: pwsh
         run: |
