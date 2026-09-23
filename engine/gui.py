@@ -504,6 +504,26 @@ Prism's.</p>
 <a href="__URL__" target="_blank" rel="noopener">Buy me a coffee</a> if it saved you a reprint.</p>
 </div><script>
 const T=new URLSearchParams(location.search).get('t');
+/* A script error during setup binds no handlers, and every control then does
+   nothing with no sign of why. That is unreportable: the only symptom available
+   is "nothing happens". Surface it instead, at the top of the page. */
+window.addEventListener('error',e=>{showFault((e&&e.message)||'script error');});
+window.addEventListener('unhandledrejection',e=>{
+  showFault('unhandled: '+((e&&e.reason&&e.reason.message)||e.reason||'?'));});
+function showFault(msg){
+  try{
+    let d=document.getElementById('fault');
+    if(!d){d=document.createElement('div');d.id='fault';
+      d.style.cssText='background:#b3261e;color:#fff;padding:10px 14px;'+
+        'border-radius:10px;margin:0 0 14px;font:13px/1.45 ui-monospace,monospace;'+
+        'white-space:pre-wrap;word-break:break-word';
+      const w=document.querySelector('.wrap');
+      if(w)w.insertBefore(d,w.firstChild); else document.body.appendChild(d);}
+    d.textContent='Prism hit a problem in the page:\n'+msg+
+      '\n\nPlease report this at github.com/4bsxhwr68n-debug/prism/issues';
+  }catch(_){}
+}
+
 const api=(p,b)=>fetch(p+'?t='+T,{method:b?'POST':'GET',headers:{'Content-Type':'application/json'},
   body:b?JSON.stringify(b):null}).then(r=>r.json());
 let S={files:[],printer:null,mode:'balanced',spectrum:false,colour:null,palette:[],spectrumOk:false};
