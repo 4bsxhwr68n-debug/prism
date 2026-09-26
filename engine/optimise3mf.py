@@ -1809,6 +1809,117 @@ def slow_notes(settings):
     return out
 
 
+# Which temperature belongs to which build surface. A project names one plate
+# and the temperature for it lives under that plate's own key, so reading the
+# wrong one reports a number the printer will never use. The table is data
+# rather than code because the app panel reads the same one.
+def _bed_plates():
+    try:
+        with open(os.path.join(DATA, 'bed-plates.json'), encoding='utf-8') as fh:
+            d = json.load(fh)
+        return d['plates'], [tuple(x) for x in d['fallback']]
+    except Exception as e:
+        # Unlike the help and problem files, this one decides what we write
+        # into somebody's project, so a missing copy is a broken build rather
+        # than a feature degrading quietly. Say so on every run; the build
+        # gate in macos/build.sh and CI both fail when they see this line.
+        sys.stderr.write('prism: BROKEN BUILD: bed-plates.json did not load '
+                         '(%s: %s)\n' % (type(e).__name__, e))
+        return {}, []
+
+
+BED_TEMP_KEYS, BED_FALLBACK = _bed_plates()
+
+
+def bed_temp_key(cfg):
+    """The temperature key for whichever plate this project has selected."""
+    bed = cfg.get('curr_bed_type')
+    if isinstance(bed, list):
+        bed = bed[0] if bed else None
+    return BED_TEMP_KEYS.get(str(bed or ''), 'hot_plate_temp')
+
+
+def fix_unheated_bed(out, notes, label):
+    """Refuse to ship a bed temperature of zero for a material that needs one.
+
+    A vendor's generic filament profile may define no temperature for the plate
+    the machine's own profile selects, and it then falls through to 0, which
+    tells the printer not to heat the bed at all. PLA on a cold plate does not
+    stick. Two shipped that way, the Sovol SV06 and the Voron 2.4, both naming
+    a Textured PEI Plate with no temperature while their smooth plate said 65.
+
+    The fix fills in the missing temperature from another plate in the same
+    profile rather than switching plate, because the plate name is the sheet
+    the owner physically has on the machine and is not ours to change. The
+    number is taken from the profile itself, never invented."""
+    if not BED_TEMP_KEYS:
+        return          # no table, so no opinion; the loader has already shouted
+    key = bed_temp_key(out)
+
+    def val(k):
+        v = out.get(k)
+        if isinstance(v, list):
+            v = v[0] if v else None
+        try:
+            return float(v)
+        except (TypeError, ValueError):
+            return None
+
+    if (val(key) or 0) > 0:
+        return
+    for bed, k in BED_FALLBACK:
+        t = val(k)
+        if t and t > 0:
+            out[key] = out[k]           # same shape, one per extruder
+            ik = key + '_initial_layer'
+            if ik in out and not (val(ik) or 0) and (k + '_initial_layer') in out:
+                out[ik] = out[k + '_initial_layer']
+            notes.append('bed: this profile sets no temperature for its %s, '
+                         'which would have told %s not to heat the bed at all. '
+                         'Using %gC, the figure the same profile gives for its '
+                         '%s.' % (str(_first_val(out.get('curr_bed_type'))),
+                                  label, t, bed))
+            return
+    notes.append('bed: no plate on %s declares a temperature, so the bed will '
+                 'not be heated. Check this before printing.' % label)
+
+
+def _first_val(v):
+    if isinstance(v, list):
+        return v[0] if v else None
+    return v
+
+
+def keep_first_layer_in_step(out, tpl, notes):
+    """Move the first layer's bed temperature with the bed temperature.
+
+    These are two separate settings and almost every profile ships them equal:
+    23 of the 24 printers here do, the Flashforge AD5X being the one that runs
+    its first layer 5C cooler on purpose. So when the bed is changed and the
+    profile had them equal, leaving the first layer behind produces a bed the
+    vendor never intended and, since the first layer is where a too-hot plate
+    splays the bottom of a print outwards, it would miss the thing the change
+    was usually made to fix. A profile that shipped them apart keeps its own
+    offset."""
+    key = bed_temp_key(out)
+    ik = key + '_initial_layer'
+    if ik not in tpl or key not in tpl:
+        return
+
+    def f(v):
+        return v[0] if isinstance(v, list) and v else v
+
+    if str(f(tpl.get(key))) != str(f(tpl.get(ik))):
+        return                          # a deliberate offset; not ours to close
+    if str(f(out.get(key))) == str(f(tpl.get(key))):
+        return                          # bed unchanged, nothing to follow
+    if str(f(out.get(ik))) != str(f(tpl.get(ik))):
+        return                          # first layer set on purpose; leave it
+    out[ik] = out[key]
+    notes.append('bed: first layer moved with it, to %gC. This profile ships '
+                 'the two equal.' % float(f(out[key])))
+
+
 def build_project_settings(src, rec, single, plan, notes, spectrum=None,
                            keep_source=False, overrides=None, supports=None):
     tpl = rec['template']
@@ -1994,6 +2105,8 @@ def build_project_settings(src, rec, single, plan, notes, spectrum=None,
         notes.append(f"{len(changed) + len(changed_fil)} setting(s) marked as "
                      "modified so the slicer keeps them")
 
+    fix_unheated_bed(out, notes, rec['label'])
+    keep_first_layer_in_step(out, tpl, notes)
     out['version'] = rec['project_version']
     out['from'] = 'project'
     # Last, because it judges the settings as they will actually be written,

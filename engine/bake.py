@@ -75,7 +75,25 @@ DEFAULTS_ALL = {
  'support_interface_top_layers': '3',        # cleaner surface under supports
  'support_top_z_distance':       '0.25',     # 1.25x layer height, easier release
 }
-DEFAULTS_BY_PRINTER = {}   # per-machine exceptions; none needed so far
+# Snapmaker's own value for PLA on the U1's textured plate is 65, which runs
+# warm enough to splay the first few layers out into an elephant foot. 50 is
+# where this printer is actually being run. It is a declared override, so the
+# panel shows it as a Prism change and the conversion notes say so; it is not
+# passed off as the vendor's number.
+DEFAULTS_BY_PRINTER = {
+ 'u1': {'textured_plate_temp': '50'},   # first layer follows it at runtime
+}
+
+# Which process preset a printer must use, where leaving it to pick_process
+# would move between releases. pick_process is quality-biased, so a vendor
+# shipping a NEW higher-quality preset silently changes what every user of
+# that printer gets: Snapmaker Orca 2.4.0 added a 0.20mm High Quality preset
+# for the U1, which would have moved it off Standard and cut its outer wall
+# speed from 200 to 60. That is a decision to take deliberately, not to
+# inherit from somebody else's release notes.
+PROCESS_PIN = {
+ 'u1': '0.20mm Standard @Snapmaker U1 (0.4 nozzle)',
+}
 
 DIALECT_OF = {}   # filled as each printer bakes; the index needs it
 
@@ -340,6 +358,14 @@ def main():
         try:
             m=resolve(root,vendor,machine)
             pname,pres=pick_process(root,vendor,machine)
+            pin=PROCESS_PIN.get(key)
+            if pin:
+                pres_pin=compatible(root,vendor,pin,machine)
+                if pres_pin is None:
+                    print(f"[skip] {key}: pinned process {pin!r} is not in this "
+                          f"vendor tree; refusing to substitute one")
+                    continue
+                pname,pres=pin,pres_pin
             if not pname: print(f"[skip] {key}: no compatible process"); continue
             fils=pick_filaments(root,vendor,machine)
             if 'PLA' not in fils: print(f"[skip] {key}: no PLA filament"); continue

@@ -3853,7 +3853,8 @@
  "defaults": {
   "sparse_infill_pattern": "gyroid",
   "support_interface_top_layers": "3",
-  "support_top_z_distance": "0.25"
+  "support_top_z_distance": "0.25",
+  "textured_plate_temp": "50"
  },
  "spectrum": {
   "filament_key": "PLA-FS",

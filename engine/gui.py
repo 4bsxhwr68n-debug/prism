@@ -284,6 +284,29 @@ QUICK = [
 ]
 
 
+# Which plate's temperature key to read, shared with the engine so the panel
+# and the converted file can never disagree about which number is the bed.
+def _bed_plates():
+    try:
+        with open(os.path.join(HERE, 'data', 'bed-plates.json'), encoding='utf-8') as fh:
+            d = json.load(fh)
+        return d['plates'], [tuple(x) for x in d['fallback']]
+    except Exception as e:
+        sys.stderr.write('prism: BROKEN BUILD: bed-plates.json did not load '
+                         '(%s: %s)\n' % (type(e).__name__, e))
+        return {}, []
+
+
+BED_TEMP_KEYS, BED_FALLBACK = _bed_plates()
+
+
+def _first(v):
+    """3MF settings are lists of one. Unwrap without assuming which."""
+    if isinstance(v, list):
+        return v[0] if v else None
+    return v
+
+
 def settings_for(key):
     """What this printer ships, what Prism changes, and what each may be set to.
 
@@ -307,6 +330,58 @@ def settings_for(key):
                      'effective': defaults.get(k, cur),
                      'prism': defaults.get(k),
                      'options': sorted(enums.get(k, []))})
+
+    # Bed temperature is the one setting whose key is not fixed: it lives
+    # under whichever plate the profile selects, so the row is resolved here
+    # rather than listed in QUICK. Without it there is no temperature control
+    # in the panel at all, and the only way to change the bed was --set.
+    plate = str(_first(tpl.get('curr_bed_type')) or '')
+    bk = BED_TEMP_KEYS.get(plate)
+    def _t(k):
+        try:
+            return float(_first(tpl.get(k)))
+        except (TypeError, ValueError):
+            return 0.0
+    cur = None
+    if bk and bk in tpl:
+        cur = str(_first(tpl[bk]))
+        if not _t(bk):
+            # This profile sets nothing for the plate it selects. The engine
+            # fills it from a sibling plate and keeps the plate name, so show
+            # the number the converted file will actually carry.
+            for _b2, k2 in BED_FALLBACK:
+                if _t(k2):
+                    cur = str(_first(tpl[k2]))
+                    break
+    if cur is not None:
+        # The panel badges a Prism override, so the explanation must not also
+        # claim the number came from the printer maker. It says which it is.
+        mine = defaults.get(bk)
+        if mine is not None and str(mine) != str(_first(tpl.get(bk))):
+            provenance = ('Prism sets %sC here, in place of the %s\'s own %sC, '
+                          'which runs warm enough to splay the bottom few '
+                          'layers outwards. Type %s to put it back.'
+                          % (mine, d.get('label', 'printer'),
+                             _first(tpl.get(bk)), _first(tpl.get(bk))))
+        else:
+            provenance = 'This is your printer\'s own value, left as it ships.'
+        rows.append({
+            'key': bk, 'label': 'Bed temperature', 'kind': 'num',
+            'slicer': plate + ' temperature',
+            'help': 'How hot the print bed runs, in Celsius. It is what holds '
+                    'the first layer down: too cool and the part lets go part '
+                    'way through, too hot and the bottom few layers soften and '
+                    'splay out into an elephant foot. Printer makers disagree '
+                    'about the right number for the same plastic, so PLA is '
+                    'run anywhere between 50 and 65 depending on the machine. '
+                    + provenance +
+                    ' If your parts are sticking and their bottom edge is '
+                    'square, you have no reason to change it. This applies to '
+                    'the ' + plate + ', which is the surface this profile '
+                    'selects, and the first layer moves with it.',
+            'effective': defaults.get(bk, cur),
+            'prism': defaults.get(bk),
+            'options': []})
     return {'rows': rows}
 
 

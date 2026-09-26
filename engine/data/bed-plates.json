@@ -1,0 +1,18 @@
+{
+  "_note": "A 3MF names one build surface in curr_bed_type, and the temperature for it lives under that surface's own key. Read by both the engine and the app panel so the two cannot drift. 'fallback' is the order to try when the selected plate has no temperature at all, which is how the Sovol SV06 and Voron 2.4 came to ship a project telling the printer not to heat the bed for PLA.",
+  "plates": {
+    "Textured PEI Plate": "textured_plate_temp",
+    "Smooth PEI Plate": "hot_plate_temp",
+    "High Temp Plate": "hot_plate_temp",
+    "Engineering Plate": "eng_plate_temp",
+    "Cool Plate": "cool_plate_temp",
+    "Textured Cool Plate": "textured_cool_plate_temp",
+    "Cool Plate (SuperTack)": "supertack_plate_temp"
+  },
+  "fallback": [
+    ["Smooth PEI Plate", "hot_plate_temp"],
+    ["High Temp Plate", "hot_plate_temp"],
+    ["Engineering Plate", "eng_plate_temp"],
+    ["Cool Plate", "cool_plate_temp"]
+  ]
+}
