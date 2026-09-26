@@ -240,6 +240,18 @@ designer's guess about someone else's:
 | `support_interface_top_layers` | `3` | Cleaner surface under supports |
 | `support_top_z_distance` | `0.25` | Releases without tearing |
 
+One printer has a fourth. The Snapmaker U1 runs PLA on its textured plate at
+50C rather than the 65C Snapmaker specifies, which is warm enough to splay the
+bottom few layers outwards into an elephant foot. It is a declared override
+like the three above: the panel shows it as a Prism value, the run output names
+it, and `--keep-source` or `--set textured_plate_temp=65` restores Snapmaker's.
+
+Bed temperature is two settings, the bed and the first layer, and 23 of the 24
+printers here ship them equal. So changing one moves the other, which matters
+because the first layer is where a hot plate does the damage. A profile that
+ships them apart on purpose, as the Flashforge AD5X does at 5C cooler, keeps
+its own offset.
+
 Anything they override is named in the run output. `--keep-source` turns them off.
 
 Settings you arrive at are worth keeping. `--save-prefs` remembers this run's

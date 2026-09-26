@@ -95,6 +95,18 @@ if [ -n "$IDENTITY" ]; then
            env -i HOME="$HOME" PATH=/usr/bin:/bin \
                "$BUILT/Contents/Resources/prism-engine" --engine --list 2>&1 | head -5; \
            exit 1; }
+    # The bundled engine must also be able to read its own data. A missing
+    # data file does not stop the binary starting, it changes what the binary
+    # writes into somebody's project, so the engine shouts and this catches it.
+    if env -i HOME="$HOME" PATH=/usr/bin:/bin \
+           "$BUILT/Contents/Resources/prism-engine" --engine --list 2>&1 \
+         | grep -q "BROKEN BUILD"; then
+      echo "REFUSING TO SHIP: the signed engine cannot read its data files."
+      env -i HOME="$HOME" PATH=/usr/bin:/bin \
+          "$BUILT/Contents/Resources/prism-engine" --engine --list 2>&1 \
+        | grep "BROKEN BUILD" | head -3
+      exit 1
+    fi
   fi
   rm -rf "$OUT"
   ditto "$BUILT" "$OUT"

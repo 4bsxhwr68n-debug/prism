@@ -44,6 +44,13 @@ jobs:
           Write-Host "printer list: $n entries"
           & ./dist/Prism.exe --engine --printer u1 --spectrum-list | Select-Object -First 3
 
+      - name: Smoke test that the engine can read its data files
+        shell: pwsh
+        run: |
+          $out = (& ./dist/Prism.exe --engine --list 2>&1 | Out-String)
+          if ($out -match 'BROKEN BUILD') { throw "the engine cannot read its data files" }
+          Write-Host "data files readable"
+
       - name: Smoke test the app window
         shell: pwsh
         env:
@@ -203,6 +210,14 @@ jobs:
           [ "$n" -ge 20 ] || { echo "expected the printer list, got $n lines"; exit 1; }
           echo "printer list: $n entries"
           ./dist/prism --engine --printer u1 --spectrum-list | head -3
+
+      - name: Smoke test that the engine can read its data files
+        run: |
+          out=$(./dist/prism --engine --list 2>&1)
+          case "$out" in
+            *"BROKEN BUILD"*) echo "the engine cannot read its data files"; exit 1 ;;
+          esac
+          echo "data files readable"
 
       - name: Smoke test the app window
         env:
