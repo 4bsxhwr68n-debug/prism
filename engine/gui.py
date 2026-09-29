@@ -9,8 +9,8 @@ Files are chosen through the NATIVE picker, not an upload, so real paths are
 kept: output lands next to the original exactly as it does when files are
 dropped on the icon, and a 20MB model never has to move.
 """
-import http.server, json, os, re, secrets, shutil, socket, subprocess, sys, threading
-import time, webbrowser
+import http.server, json, os, re, secrets, shutil, socket, subprocess, sys, tempfile
+import threading, time, webbrowser
 
 import prismupdate
 from prismversion import VERSION

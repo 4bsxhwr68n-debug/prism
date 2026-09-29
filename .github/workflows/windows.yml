@@ -37,6 +37,34 @@ jobs:
             --hidden-import prismversion --hidden-import prismupdate `
             windows/prism_win.py
 
+      - name: Undefined names anywhere in the source
+        shell: pwsh
+        run: |
+          # The Windows file picker was broken for three releases by a missing
+          # "import tempfile". That line is in a Windows-only branch, so no Mac
+          # or Linux run reached it; py_compile does not look for undefined
+          # names; and the picker check below extracts the PowerShell and runs
+          # it directly, never calling the Python around it. Every gate we had
+          # said yes. pyflakes finds it without executing anything, which is
+          # the only kind of check that can cover a branch this machine is not
+          # running.
+          pip install pyflakes
+          python -m pyflakes engine/*.py linux/*.py windows/*.py > flakes.txt 2>&1
+          Get-Content flakes.txt | ForEach-Object { Write-Host "  $_" }
+          if (Select-String -Path flakes.txt -Pattern 'undefined name' -Quiet) {
+            throw "undefined name in the source"
+          }
+          Write-Host "no undefined names"
+
+      - name: The file picker survives being called
+        shell: pwsh
+        run: |
+          # Not "does the PowerShell parse", which is the other picker check
+          # and which passed throughout. Does pick_files() itself reach the
+          # point of showing a dialog. See tests/picker_smoke.py.
+          python tests/picker_smoke.py
+          if ($LASTEXITCODE -ne 0) { throw "the file picker cannot be called" }
+
       - name: Smoke test the binary
         shell: pwsh
         run: |
