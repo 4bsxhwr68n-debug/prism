@@ -51,10 +51,14 @@ jobs:
           pip install pyflakes
           python -m pyflakes engine/*.py linux/*.py windows/*.py > flakes.txt 2>&1
           Get-Content flakes.txt | ForEach-Object { Write-Host "  $_" }
+          # pyflakes exits non-zero on ANY finding, unused imports included,
+          # and this step judges only undefined names. Without resetting it the
+          # gate fails on the tidiness of the imports rather than on a fault.
           if (Select-String -Path flakes.txt -Pattern 'undefined name' -Quiet) {
             throw "undefined name in the source"
           }
           Write-Host "no undefined names"
+          exit 0
 
       - name: The file picker survives being called
         shell: pwsh

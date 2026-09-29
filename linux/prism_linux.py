@@ -9,7 +9,6 @@ One binary serving three jobs, dispatched on argv:
 The third exists because inside a frozen bundle sys.executable is this exe
 rather than a Python interpreter, so the GUI cannot shell out to a .py file.
 """
-import os
 import sys
 
 

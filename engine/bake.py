@@ -11,7 +11,7 @@ Dialects (template shape + version stamps a target slicer accepts):
   bambu     Bambu Studio 2.x    (proven: MakerWorld rack file, BambuStudio-02.01.01.52)
   orca      generic OrcaSlicer  (Orca 2.3.5 shape + Bambu-style stamps)
 """
-import json, os, sys, zipfile, glob, subprocess
+import json, os, glob, subprocess
 
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'out_v2')
 CP_ROOT = "/Applications/Creality Print.app/Contents/Resources/profiles"

@@ -20,7 +20,6 @@ So this module measures, states what it cannot know, and lets the caller
 decide. It never picks for you when the answer is in doubt.
 """
 import os
-import re
 import struct
 import zipfile
 
