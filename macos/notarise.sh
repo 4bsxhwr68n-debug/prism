@@ -40,6 +40,19 @@ fi
 ELAPSED=$(( $(date +%s) - START ))
 
 ID=$(grep -o '  id: [0-9a-f-]*' "$TMP/out" | head -1 | awk '{print $2}')
+# An upload that never completed is not a verdict on the app. notarytool
+# reports it as abortedUpload with completedParts: [], and calling that a
+# rejection sends you looking for a fault in a bundle Apple never received.
+if grep -q 'abortedUpload\|deadlineExceeded\|HTTPClientError' "$TMP/out"; then
+  echo
+  echo "The upload to Apple did not complete after ${ELAPSED}s. This is the"
+  echo "network, not the app: Apple never received the bundle, so there is no"
+  echo "verdict on it. If a VPN is connected, that is the first thing to check."
+  echo "Nothing is wrong with the build. Run this again when the connection is"
+  echo "steady:"
+  echo "  ./macos/notarise.sh \"$APP\""
+  exit 1
+fi
 if ! grep -q 'status: Accepted' "$TMP/out"; then
   echo
   echo "Apple rejected it after ${ELAPSED}s. Their reasons:"
