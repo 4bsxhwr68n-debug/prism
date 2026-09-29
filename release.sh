@@ -5,6 +5,16 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 VER="${1:?usage: ./release.sh v1.0.0 [outdir]}"
 OUT="${2:-$HERE/dist}"
 mkdir -p "$OUT"
+
+# The version lives in engine/prismversion.py, and the update check compares
+# against it. A tag that disagrees with it ships a build that tells people it
+# is a version it is not, and then never offers them the update that follows.
+SRCVER="v$(PYTHONPATH="$HERE/engine" python3 -c 'from prismversion import VERSION; print(VERSION)')"
+if [ "$SRCVER" != "$VER" ]; then
+  echo "Refusing to build: you asked for $VER but engine/prismversion.py says $SRCVER."
+  echo "Edit VERSION there first, so the app and the tag agree."
+  exit 1
+fi
 TMP="$(mktemp -d)"
 
 # Without this the macOS zip ships needing Python on the user's Mac, which

@@ -25,6 +25,7 @@ mkdir -p "$HERE/build"
   --add-data "$ROOT/engine/data:data" \
   --hidden-import gui --hidden-import optimise3mf --hidden-import mixer \
   --hidden-import meshimport \
+  --hidden-import prismversion --hidden-import prismupdate \
   "$ROOT/linux/prism_linux.py" > "$HERE/build/pyinstaller.log" 2>&1 \
   || { tail -20 "$HERE/build/pyinstaller.log"; exit 1; }
 

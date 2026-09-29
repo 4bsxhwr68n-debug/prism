@@ -325,6 +325,25 @@ own: `python3 engine/optimise3mf.py --interactive yourfile.3mf`.
 a major slicer upgrade run `python3 engine/bake.py` with those slicers installed.
 It writes `out_v2/`; copy `printers/` and `index.json` into `engine/data/`.
 
+## Updates
+
+The window shows its version, and asks GitHub once on launch whether there is a
+newer release. If there is, a bar at the top says so and links to it. **Not
+now** dismisses that version until a later one appears. There is a **Check for
+updates** button next to the version for asking again on demand, and that one
+tells you when you are up to date, which the launch check deliberately does not.
+
+Prism does not update itself. It tells you and links to the download. Replacing
+a running application risks the signature macOS just checked it against,
+Windows will not let a running executable overwrite itself, and software that
+downloads and runs binaries is the thing antivirus exists to stop. A link costs
+none of that.
+
+The check reaches `api.github.com` and sends nothing but a request for the
+latest release number. It answers from a cache for six hours, and if it cannot
+get through it says nothing at all on launch, because not knowing is not news.
+Set `PRISM_NO_UPDATE_CHECK=1` to turn it off entirely.
+
 ## If something goes wrong
 
 **"Prism is damaged and can't be opened"** on macOS. You are on a release before

@@ -30,6 +30,8 @@ __version__ = '2.0'
 # _MEIPASS is where PyInstaller unpacks the bundle; falls back to the script
 # directory when running from source.
 TOOL_DIR = getattr(sys, '_MEIPASS', None) or os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, TOOL_DIR)
+from prismversion import VERSION
 DATA = os.path.join(TOOL_DIR, 'data')
 
 CARRY_KEYS = ['wall_loops', 'wall_generator',
@@ -2548,6 +2550,8 @@ def run_report(files, rec, skip_analyse, orient=False, units=None, up=None):
 
 def main():
     ap = argparse.ArgumentParser()
+    ap.add_argument('--version', action='version',
+                    version='Prism %s' % VERSION)
     ap.add_argument('--printer')
     ap.add_argument('--list', action='store_true')
     ap.add_argument('--report', action='store_true')
