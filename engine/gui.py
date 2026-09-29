@@ -60,13 +60,32 @@ LINUX_PICKERS = [
 ]
 
 
+# ShowDialog() with no owner belongs to no window, and Windows is then free
+# to place it behind whatever has focus. Reported on 1.0.8: "the open file
+# dialog pops behind the browser window", which from the other side of the
+# screen is identical to the dialog never opening at all. An invisible topmost
+# form is given to it as owner so it comes to the front. Every part of that is
+# inside a try, because a dialog in the wrong place still beats no dialog.
 WIN_PICKER_PS = (
     'Add-Type -AssemblyName System.Windows.Forms\n'
     '$d = New-Object System.Windows.Forms.OpenFileDialog\n'
     '$d.Title = "Choose models to optimise"\n'
     'try { $d.Filter = "Models|*.3mf;*.obj;*.stl|All files|*.*" } catch { }\n'
     '$d.Multiselect = $true\n'
-    'if ($d.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {\n'
+    '$owner = $null\n'
+    'try {\n'
+    '  $owner = New-Object System.Windows.Forms.Form\n'
+    '  $owner.TopMost = $true\n'
+    '  $owner.ShowInTaskbar = $false\n'
+    '  $owner.Opacity = 0\n'
+    '  $owner.Width = 1\n'
+    '  $owner.Height = 1\n'
+    '  $owner.Show()\n'
+    '  $owner.Activate()\n'
+    '} catch { $owner = $null }\n'
+    'if ($owner) { $res = $d.ShowDialog($owner) } else { $res = $d.ShowDialog() }\n'
+    'if ($owner) { try { $owner.Close() } catch { } }\n'
+    'if ($res -eq [System.Windows.Forms.DialogResult]::OK) {\n'
     '  $d.FileNames -join [Environment]::NewLine\n'
     '}\n')
 
@@ -116,6 +135,7 @@ def pick_files():
     # script before ShowDialog and open no dialog whatsoever. An unfiltered
     # dialog is a far better failure than no dialog.
     script = WIN_PICKER_PS
+    p = None
     fh = tempfile.NamedTemporaryFile('w', suffix='.ps1', delete=False,
                                      encoding='utf-8')
     try:
@@ -123,6 +143,11 @@ def pick_files():
         p = subprocess.run(['powershell', '-NoProfile', '-STA',
                             '-ExecutionPolicy', 'Bypass', '-File', fh.name],
                            capture_output=True, text=True)
+    except OSError as exc:
+        # PowerShell missing from PATH, blocked by policy, or the script
+        # refused. Read after the finally below, p would be unbound and the
+        # traceback would name the wrong thing entirely.
+        return [], 'The file dialog could not be started: %s' % exc
     finally:
         try:
             os.unlink(fh.name)
@@ -603,7 +628,15 @@ function showFault(msg){
 }
 
 const api=(p,b)=>fetch(p+'?t='+T,{method:b?'POST':'GET',headers:{'Content-Type':'application/json'},
-  body:b?JSON.stringify(b):null}).then(r=>r.json());
+  body:b?JSON.stringify(b):null}).then(r=>r.json()).then(r=>{
+  /* A failure anywhere in the dispatch answers {ok:false,text:...} and none
+     of the keys the caller expects. Every caller then died on the missing key
+     and reported "cannot read properties of undefined", which named the line
+     that noticed rather than the thing that broke: issue #2 was a picker that
+     threw on Windows, reported as a JavaScript error about .length. Raise the
+     server's own words so the banner shows the actual cause. */
+  if(r&&r.ok===false&&r.text)throw new Error(r.text);
+  return r;});
 let S={files:[],printer:null,mode:'balanced',spectrum:false,colour:null,palette:[],spectrumOk:false};
 /* The questions card. Answers come from the engine, so the window and the
    command line can never drift apart on what a setting means. */
@@ -696,7 +729,13 @@ function loadSettings(){
     `<span class="i" data-h="h${i}" title="What does this do?">i</span></label>`+
     `${ctl}<div class="hlp" id="h${i}">`+
     `<b>In the slicer: ${f.slicer}</b><br>${f.help}</div></div>`;
-  }).join('');});}
+  }).join('');}).catch(e=>{
+   /* Without this the grid was simply emptied and the panel looked as though
+      the settings had been removed from the app. Say which read failed. */
+   wait.hidden=false;
+   wait.textContent='These settings could not be read: '+((e&&e.message)||e);
+   document.getElementById('advgrid').innerHTML='';
+   showFault('settings: '+((e&&e.message)||e));});}
 
 function collectSets(){const out=[];
  document.querySelectorAll('#advgrid [data-k]').forEach(el=>{
@@ -739,7 +778,7 @@ function probe(){api('/api/probe',{files:S.files}).then(r=>{
 
 document.getElementById('pick').onclick=()=>api('/api/pick',{}).then(r=>{
  if(r.note){document.getElementById('filehint').textContent=r.note;return;}
- if(!r.files.length)return; S.files=r.files;
+ if(!(r.files||[]).length)return; S.files=r.files;
  document.getElementById('filehint').textContent=r.files.length+' file'+(r.files.length>1?'s':'');
  document.getElementById('files').innerHTML=r.files.map(f=>'<div>'+f.split('/').pop().split('\\').pop()+'</div>').join('');
  document.getElementById('c2').classList.remove('off');meshCheck();refresh();analyse();if(S.spectrum)probe();});
@@ -888,8 +927,16 @@ class Handler(http.server.BaseHTTPRequestHandler):
         try:
             if path == '/api/pick':
                 # The note is whatever the picker could not do, which the page
-                # shows instead of leaving the button looking inert.
-                picked, note = pick_files()
+                # shows instead of leaving the button looking inert. Caught
+                # here rather than by the dispatch below, because that answers
+                # without a 'files' key at all and the page reported the
+                # missing key instead of the reason (issue #2).
+                try:
+                    picked, note = pick_files()
+                except Exception as exc:
+                    picked = []
+                    note = ('The file dialog could not run: %s: %s'
+                            % (type(exc).__name__, exc))
                 self._send(json.dumps({'files': picked, 'note': note or ''}))
             elif path == '/api/settings':
                 self._send(json.dumps(settings_for(body.get('printer', ''))))

@@ -76,6 +76,44 @@ jobs:
           if (-not $p.HasExited) { $p.Kill(); throw "did not exit on goodbye" }
           Write-Host "exited on goodbye"
 
+      - name: Smoke test that every setting reaches the panel
+        shell: pwsh
+        env:
+          PRISM_NO_BROWSER: '1'
+        run: |
+          # "The fan adjustments have disappeared from the Windows app" was
+          # reported and could not be reproduced on a Mac, because nothing had
+          # ever asked a real Windows machine what the panel is served. The
+          # settings endpoint answers a failure with no 'rows' at all, and the
+          # page then empties the grid, which looks exactly like a feature
+          # having been removed. So ask every printer, on Windows, every push.
+          $p = Start-Process ./dist/Prism.exe -PassThru -NoNewWindow -RedirectStandardOutput gui2.log
+          $url = $null
+          foreach ($i in 1..40) {
+            if (Test-Path gui2.log) {
+              $m = Select-String -Path gui2.log -Pattern 'Prism running at (\S+)' | Select-Object -First 1
+              if ($m) { $url = $m.Matches[0].Groups[1].Value; break }
+            }
+            Start-Sleep -Milliseconds 500
+          }
+          if (-not $url) { throw "the app window never started" }
+          $tok = ($url -split 't=')[1]; $base = ($url -split '/\?')[0]
+          $printers = (Invoke-WebRequest "$base/api/printers?t=$tok" -UseBasicParsing).Content | ConvertFrom-Json
+          $want = @('fan_max_speed','additional_cooling_fan_speed','overhang_fan_speed')
+          $bad = @()
+          foreach ($pr in $printers.printers) {
+            $b = @{ printer = $pr.key } | ConvertTo-Json -Compress
+            $r = (Invoke-WebRequest "$base/api/settings?t=$tok" -Method POST -Body $b `
+                    -ContentType 'application/json' -UseBasicParsing).Content | ConvertFrom-Json
+            if (-not $r.rows) { $bad += "$($pr.key): no rows at all ($($r.text))"; continue }
+            $keys = $r.rows | ForEach-Object { $_.key }
+            foreach ($w in $want) { if ($keys -notcontains $w) { $bad += "$($pr.key): missing $w" } }
+            if ($keys -notcontains 'layer_height') { $bad += "$($pr.key): missing layer_height" }
+          }
+          Invoke-WebRequest "$base/api/bye?t=$tok" -UseBasicParsing | Out-Null
+          if ($bad.Count) { $bad | ForEach-Object { Write-Host $_ }; throw "settings missing from the panel" }
+          Write-Host "all three fan controls present on all $($printers.printers.Count) printers"
+
       - name: Smoke test the script launcher
         shell: pwsh
         env:
