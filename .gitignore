@@ -9,3 +9,8 @@ out_v2/
 macos/.venv/
 macos/dist/
 macos/spec/
+
+# Built release artefacts. These belong on the releases page, which is where
+# people get them. Only macos/dist was ignored, so every build since v1.1.0
+# committed its own zips: 52MB of them, paid for by everybody who clones.
+dist/

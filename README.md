@@ -353,6 +353,20 @@ latest release number. It answers from a cache for six hours, and if it cannot
 get through it says nothing at all on launch, because not knowing is not news.
 Set `PRISM_NO_UPDATE_CHECK=1` to turn it off entirely.
 
+## The Windows file dialog
+
+It opens in front of the browser. That sounds like nothing to mention, but it
+took three attempts, because Windows will not let a process take the foreground
+unless it already owns it, and the PowerShell that shows the dialog is started
+by a local server answering a click. It owns nothing.
+
+What works is ownership rather than force: the window in front when you click
+is the browser, and a dialog owned by a window is always above it. The rest is
+a fallback for when there is no usable window to own to.
+
+`PRISM_PICKER_LOG` set to a path writes what the picker did, which is the only
+useful thing to send if it ever misbehaves again.
+
 ## When it stops
 
 Prism runs a small server behind the window, and it quits when you close the

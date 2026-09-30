@@ -7,7 +7,7 @@ check by reading the code, and the update check below is only as trustworthy
 as the version it compares against.
 """
 
-VERSION = '1.3.1'
+VERSION = '1.3.2'
 
 # Where the update check looks. Public, unauthenticated, read only.
 REPO = '4bsxhwr68n-debug/prism'

@@ -192,6 +192,14 @@ jobs:
           if ($bad -notmatch 'could not start') { $bad; throw "a broken app launched silently: this check proves nothing" }
           Write-Host "control: a broken app is reported, not swallowed"
 
+      - name: The file dialog comes to the front
+        shell: pwsh
+        run: |
+          # Reported twice, and fixed once on reasoning alone because nothing
+          # here could see a screen. That fix did not work. This runner has a
+          # real desktop, so the question gets asked rather than argued.
+          ./tests/zorder_check.ps1
+
       - name: Smoke test the file picker command
         shell: pwsh
         run: |

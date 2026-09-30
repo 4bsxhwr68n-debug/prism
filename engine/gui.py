@@ -75,34 +75,108 @@ LINUX_PICKERS = [
 ]
 
 
-# ShowDialog() with no owner belongs to no window, and Windows is then free
-# to place it behind whatever has focus. Reported on 1.0.8: "the open file
-# dialog pops behind the browser window", which from the other side of the
-# screen is identical to the dialog never opening at all. An invisible topmost
-# form is given to it as owner so it comes to the front. Every part of that is
-# inside a try, because a dialog in the wrong place still beats no dialog.
+# Windows will not let a process take the foreground unless it already owns
+# it, and this PowerShell is started by a local server answering an HTTP
+# request, so it owns nothing. That is why the dialog opens behind the browser.
+#
+# Reported on 1.0.8 and again on 1.2.1, and fixed wrongly twice before CI could
+# see a screen: first with an owner form at Opacity 0, which cannot take focus,
+# then with an Alt keypress and a real owner, which CI proved was still not
+# enough.
+#
+# The mechanism that does not need foreground rights is ownership. The window
+# in front when Prism is clicked is the browser, and a dialog owned by a window
+# is always above it in z-order. NativeWindow wraps that handle so it can be
+# passed as the owner. AttachThreadInput and the raise timer stay behind it as
+# a second route for the case where there is no usable foreground window.
+#
+# Every part is inside a try. A dialog in the wrong place beats no dialog.
 WIN_PICKER_PS = (
-    'Add-Type -AssemblyName System.Windows.Forms\n'
+    '$dbg = $env:PRISM_PICKER_LOG\n'
+    'function Note($m) { if ($dbg) { try { Add-Content -Path $dbg -Value $m } catch { } } }\n'
+    'Note "picker script started"\n'
+    'try { Add-Type -AssemblyName System.Windows.Forms; Note "forms loaded" }\n'
+    'catch { Note "forms FAILED: $_"; throw }\n'
+    'try {\n'
+    'Add-Type @\'\n'
+    'using System;\n'
+    'using System.Runtime.InteropServices;\n'
+    'public class PrismFront {\n'
+    '  [DllImport("user32.dll", CharSet=CharSet.Unicode)]\n'
+    '  public static extern IntPtr FindWindow(string c, string n);\n'
+    '  [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);\n'
+    '  [DllImport("user32.dll")] public static extern bool BringWindowToTop(IntPtr h);\n'
+    '  [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();\n'
+    '  [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr h, IntPtr p);\n'
+    '  [DllImport("user32.dll")] public static extern bool AttachThreadInput(uint a, uint b, bool f);\n'
+    '  [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h, int n);\n'
+    '  [DllImport("kernel32.dll")] public static extern uint GetCurrentThreadId();\n'
+    '  public static void Raise(IntPtr h) {\n'
+    '    if (h == IntPtr.Zero) return;\n'
+    '    IntPtr fg = GetForegroundWindow();\n'
+    '    uint other = GetWindowThreadProcessId(fg, IntPtr.Zero);\n'
+    '    uint mine = GetCurrentThreadId();\n'
+    '    if (other != mine) AttachThreadInput(other, mine, true);\n'
+    '    ShowWindow(h, 9);\n'
+    '    BringWindowToTop(h);\n'
+    '    SetForegroundWindow(h);\n'
+    '    if (other != mine) AttachThreadInput(other, mine, false);\n'
+    '  }\n'
+    '}\n'
+    '\'@\n'
+    'Note "native helpers compiled"\n'
+    '} catch { Note "Add-Type FAILED: $_" }\n'
+    '# The window in front right now is the browser Prism was clicked in. A dialog\n'
+    '# OWNED by it is always above it in z-order, which needs no foreground rights\n'
+    '# at all, and foreground rights are exactly what a process spawned by a local\n'
+    '# server does not have.\n'
+    '$fg = [IntPtr]::Zero\n'
+    'try { $fg = [PrismFront]::GetForegroundWindow() } catch { Note "no GetForegroundWindow: $_" }\n'
+    'Note "foreground at start: $fg"\n'
     '$d = New-Object System.Windows.Forms.OpenFileDialog\n'
     '$d.Title = "Choose models to optimise"\n'
     'try { $d.Filter = "Models|*.3mf;*.obj;*.stl|All files|*.*" } catch { }\n'
     '$d.Multiselect = $true\n'
+    'try { (New-Object -ComObject WScript.Shell).SendKeys("%") } catch { }\n'
     '$owner = $null\n'
     'try {\n'
-    '  $owner = New-Object System.Windows.Forms.Form\n'
-    '  $owner.TopMost = $true\n'
-    '  $owner.ShowInTaskbar = $false\n'
-    '  $owner.Opacity = 0\n'
-    '  $owner.Width = 1\n'
-    '  $owner.Height = 1\n'
-    '  $owner.Show()\n'
-    '  $owner.Activate()\n'
-    '} catch { $owner = $null }\n'
+    '  if ($fg -ne [IntPtr]::Zero) {\n'
+    '    $owner = New-Object System.Windows.Forms.NativeWindow\n'
+    '    $owner.AssignHandle($fg)\n'
+    '    Note "owning the dialog to the foreground window"\n'
+    '  }\n'
+    '} catch { Note "could not own to it: $_"; $owner = $null }\n'
+    '$timer = $null\n'
+    'try {\n'
+    '  $timer = New-Object System.Windows.Forms.Timer\n'
+    '  $timer.Interval = 250\n'
+    '  $timer.Add_Tick({\n'
+    '    try {\n'
+    '      $h = [PrismFront]::FindWindow($null, "Choose models to optimise")\n'
+    '      if ($h -ne [IntPtr]::Zero) {\n'
+    '        [PrismFront]::Raise($h)\n'
+    '        if ($env:PRISM_PICKER_LOG) {\n'
+    '          Add-Content -Path $env:PRISM_PICKER_LOG -Value "raised $h"\n'
+    '        }\n'
+    '        $this.Stop()\n'
+    '      }\n'
+    '    } catch {\n'
+    '      if ($env:PRISM_PICKER_LOG) {\n'
+    '        Add-Content -Path $env:PRISM_PICKER_LOG -Value "tick failed: $_"\n'
+    '      }\n'
+    '    }\n'
+    '  })\n'
+    '  $timer.Start()\n'
+    '  Note "raise timer started"\n'
+    '} catch { Note "no timer: $_"; $timer = $null }\n'
     'if ($owner) { $res = $d.ShowDialog($owner) } else { $res = $d.ShowDialog() }\n'
-    'if ($owner) { try { $owner.Close() } catch { } }\n'
+    'Note "dialog closed: $res"\n'
+    'if ($timer) { try { $timer.Stop() } catch { } }\n'
+    'if ($owner) { try { $owner.ReleaseHandle() } catch { } }\n'
     'if ($res -eq [System.Windows.Forms.DialogResult]::OK) {\n'
     '  $d.FileNames -join [Environment]::NewLine\n'
-    '}\n')
+    '}\n'
+)
 
 
 def pick_files():
