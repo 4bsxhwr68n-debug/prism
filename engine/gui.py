@@ -33,11 +33,23 @@ SUPPORT_URL = 'https://buymeacoffee.com/prismprints'
 # window for a minute killed the app. This is now only a safety net for a browser
 # that crashed or was force quit, and closing the tab is handled explicitly by
 # the goodbye beacon instead of by waiting for silence.
-IDLE_TIMEOUT = 900.0
+# Measured on the MONOTONIC clock, which on macOS is mach_absolute_time and
+# does not tick while the machine is asleep. The wall clock does, so the old
+# version counted a closed lid as idleness and the app was reliably dead on
+# waking. Sleeping is not the user going away.
+#
+# The length is now generous because it is no longer the main mechanism. A tab
+# that is genuinely closed says goodbye explicitly, so this is only the net for
+# a browser that died without a word. A frozen background tab sends no
+# heartbeat either, and quitting on that is indistinguishable, from the far
+# side, from quitting on somebody who simply looked at something else for a
+# while. A local server costing nothing is better than a session that dies
+# while you are reading.
+IDLE_TIMEOUT = float(os.environ.get('PRISM_IDLE_TIMEOUT') or 8 * 3600)
 # A reload fires pagehide too, so the beacon starts a countdown rather than
 # quitting outright. The request the reloaded page makes cancels it.
 GOODBYE_GRACE = 20.0
-_last_seen = [time.time()]
+_last_seen = [time.monotonic()]
 _leaving = [0.0]
 
 
@@ -728,7 +740,19 @@ document.getElementById('cpbtn').addEventListener('click',()=>{
     .catch(()=>{O.textContent='could not reach the engine';});
 });
 
-const beat=()=>api('/api/ping').catch(()=>{});
+/* A page whose engine has gone looks completely normal and every control does
+   nothing, which is the same unreportable symptom as a script error. Two
+   misses in a row is the engine being gone rather than one dropped request. */
+let missed=0;
+const beat=()=>api('/api/ping').then(()=>{
+  missed=0;
+  const d=document.getElementById('fault');
+  if(d&&d.dataset.gone){d.remove();}
+}).catch(()=>{
+  if(++missed<2)return;
+  showFault('The Prism engine is no longer running, so nothing on this page '
+   +'will work. This window can be closed. Start Prism again to carry on.');
+  const d=document.getElementById('fault'); if(d)d.dataset.gone='1';});
 setInterval(beat,8000);
 /* A hidden tab's timers are throttled and eventually frozen, so beat again the
    moment the page is looked at rather than waiting for the next tick. */
@@ -737,7 +761,15 @@ window.addEventListener('focus',beat);
 /* Closing the tab should quit the app promptly instead of leaving it running.
    pagehide also fires on a reload, so this only starts a countdown, and the
    reloaded page cancels it with its first request. */
-window.addEventListener('pagehide',()=>{try{navigator.sendBeacon('/api/bye?t='+T);}catch(e){}});
+window.addEventListener('pagehide',e=>{
+ /* pagehide also fires when the page is only being parked in the back/forward
+    cache, and a parked page can be restored. Saying goodbye then quits the app
+    behind a tab that is still perfectly alive. e.persisted tells the two apart:
+    true means parked, false means actually going. */
+ if(e && e.persisted)return;
+ try{navigator.sendBeacon('/api/bye?t='+T);}catch(err){}});
+/* Restored from that cache: announce we are back, in case a goodbye did go. */
+window.addEventListener('pageshow',e=>{if(e&&e.persisted)beat();});
 
 const MODES=[['speed','Speed','Coarser layers, about 0.7× the time'],
  ['balanced','Balanced','The sensible default'],
@@ -983,7 +1015,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_GET(self):
-        _last_seen[0] = time.time()
+        _last_seen[0] = time.monotonic()
         _leaving[0] = 0.0
         path = self.path.split('?')[0]
         if not self._auth():
@@ -1002,13 +1034,13 @@ class Handler(http.server.BaseHTTPRequestHandler):
         elif path == '/api/ping':
             self._send(json.dumps({'ok': True}))
         elif path == '/api/bye':
-            _leaving[0] = time.time() + GOODBYE_GRACE
+            _leaving[0] = time.monotonic() + GOODBYE_GRACE
             self._send(json.dumps({'ok': True}))
         else:
             self.send_error(404)
 
     def do_POST(self):
-        _last_seen[0] = time.time()
+        _last_seen[0] = time.monotonic()
         _leaving[0] = 0.0
         path = self.path.split('?')[0]
         if not self._auth():
@@ -1085,7 +1117,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
             elif path == '/api/ping':
                 self._send(json.dumps({'ok': True}))
             elif path == '/api/bye':
-                _leaving[0] = time.time() + GOODBYE_GRACE
+                _leaving[0] = time.monotonic() + GOODBYE_GRACE
                 self._send(json.dumps({'ok': True}))
             elif path == '/api/convert':
                 args = ['--printer', body.get('printer', ''),
@@ -1151,16 +1183,23 @@ def main():
     # CI needs to drive the window without a browser appearing on the runner.
     if not os.environ.get('PRISM_NO_BROWSER'):
         webbrowser.open(url)
+    why = 'stopped'
     try:
         while True:
-            now = time.time()
+            now = time.monotonic()
             if _leaving[0] and now > _leaving[0]:
-                break          # the tab was closed and did not come back
+                why = 'the window was closed'
+                break
             if now - _last_seen[0] > IDLE_TIMEOUT:
-                break          # nothing at all for 15 minutes
+                why = ('nothing was heard from the window for %g hours'
+                       % (IDLE_TIMEOUT / 3600.0))
+                break
             time.sleep(1)
     except KeyboardInterrupt:
-        pass
+        why = 'interrupted'
+    # Say why. A report of "it stops after a while" could not be told apart
+    # from a crash without this, and the reason is the whole diagnosis.
+    print('Prism is stopping: %s.' % why, flush=True)
     srv.shutdown()
 
 

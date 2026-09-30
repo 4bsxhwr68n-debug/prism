@@ -353,6 +353,21 @@ latest release number. It answers from a cache for six hours, and if it cannot
 get through it says nothing at all on launch, because not knowing is not news.
 Set `PRISM_NO_UPDATE_CHECK=1` to turn it off entirely.
 
+## When it stops
+
+Prism runs a small server behind the window, and it quits when you close the
+window. Closing the tab says so explicitly, and it is gone a few seconds later.
+
+It does not quit because you looked at something else, and it does not quit
+because the machine went to sleep. Idleness is measured on a clock that stops
+while the Mac does, so a closed lid is not time away. The backstop for a
+browser that died without a word is eight hours, and `PRISM_IDLE_TIMEOUT`
+overrides it in seconds.
+
+If the engine does stop while the page is still open, the page says so instead
+of leaving every control quietly doing nothing. When Prism exits it prints its
+reason, which is worth including in a report.
+
 ## If something goes wrong
 
 **"Prism is damaged and can't be opened"** on macOS. You are on a release before
