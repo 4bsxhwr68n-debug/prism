@@ -246,6 +246,15 @@ bottom few layers outwards into an elephant foot. It is a declared override
 like the three above: the panel shows it as a Prism value, the run output names
 it, and `--keep-source` or `--set textured_plate_temp=65` restores Snapmaker's.
 
+**Idle nozzle temperature** is the one control that only applies to some
+machines. It is what a nozzle sits at while another one prints, and it only
+does anything where the profile has ooze prevention switched on, which is 7 of
+the 24. Low and a waiting nozzle is inert, but every tool change waits for it
+to climb back; high and the changes are quick, at the cost of a molten nozzle
+weeping between them and staying hot all print. The slider reads **off** at
+zero, which hands the decision back to the printer's own standby difference,
+and the explanation next to it names what that works out to on your machine.
+
 Bed temperature is two settings, the bed and the first layer, and 23 of the 24
 printers here ship them equal. So changing one moves the other, which matters
 because the first layer is where a hot plate does the damage. A profile that

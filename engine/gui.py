@@ -238,6 +238,16 @@ QUICK = [
   'A separate speed used only over overhangs and bridges, where the plastic has '
   'nothing underneath and has to set in the air. Usually higher than the main '
   'fan, and worth keeping high even if you turn the main one down.'),
+ ('idle_temperature', 'Idle nozzle temperature', 'tempslider', 'Idle temperature',
+  'What a nozzle sits at while another one is printing. Only the tools this '
+  'print actually uses are heated at all, so this is about the ones waiting '
+  'their turn. Low and they are inert, but every tool change then waits for a '
+  'nozzle to climb back to printing temperature, which on a print with hundreds '
+  'of changes is a great deal of waiting. High and the changes are quick, but a '
+  'molten nozzle weeps between them and spends the whole print hot rather than '
+  'only while it works, which on a long job is how heat creep and clogs start. '
+  'Zero switches it off and falls back to the printer profile\'s own '
+  'standby difference.'),
  ('sparse_infill_pattern', 'Infill pattern', 'enum', 'Sparse infill pattern',
   'The lattice inside the part. Gyroid is equally strong in every direction and '
   'never crosses itself, so it prints cleanly and quietly. Grid is quicker but '
@@ -328,6 +338,13 @@ def _bed_plates():
 BED_TEMP_KEYS, BED_FALLBACK = _bed_plates()
 
 
+def _num(v, fallback=0):
+    try:
+        return int(float(_first(v)))
+    except (TypeError, ValueError):
+        return fallback
+
+
 def _first(v):
     """3MF settings are lists of one. Unwrap without assuming which."""
     if isinstance(v, list):
@@ -353,11 +370,32 @@ def settings_for(key):
         cur = tpl[k]
         cur = cur[0] if isinstance(cur, list) and cur else cur
         cur = str(cur).rstrip('%')
-        rows.append({'key': k, 'label': label, 'kind': kind,
-                     'slicer': slicer_name, 'help': helptext,
-                     'effective': defaults.get(k, cur),
-                     'prism': defaults.get(k),
-                     'options': sorted(enums.get(k, []))})
+        row = {'key': k, 'label': label, 'kind': kind,
+               'slicer': slicer_name, 'help': helptext,
+               'effective': defaults.get(k, cur),
+               'prism': defaults.get(k),
+               'options': sorted(enums.get(k, []))}
+        if kind == 'tempslider':
+            # The ceiling is this printer's own printing temperature: idling
+            # hotter than you print is not a thing anyone wants, and a slider
+            # that offers it invites the question.
+            hot = _num(_first(tpl.get('nozzle_temperature')), 250)
+            row['min'], row['max'], row['step'] = 0, hot, 5
+            # And say whether it will do anything here at all. The setting is
+            # inert unless ooze prevention is on, which it is on 7 of the 24
+            # machines, so on the others this control would silently do nothing
+            # and look broken rather than inapplicable.
+            if str(_first(tpl.get('ooze_prevention'))) == '1':
+                delta = _num(tpl.get('standby_temperature_delta'), 0)
+                row['help'] += (' On this printer the standby difference is %d, '
+                                'so leaving this at zero parks an idle nozzle '
+                                'at %dC.' % (delta, hot + delta))
+            else:
+                row['help'] += (' Note that this printer has ooze prevention '
+                                'switched off, so it will ignore this value '
+                                'until that is turned on in the slicer.')
+                row['inert'] = True
+        rows.append(row)
 
     # Bed temperature is the one setting whose key is not fixed: it lives
     # under whichever plate the profile selects, so the row is resolved here
@@ -737,6 +775,12 @@ function loadSettings(){
     ? `<div class="sl"><input type="range" min="0" max="100" step="5"
          value="${f.effective}" data-k="${f.key}" data-def="${f.effective}">
        <output>${f.effective}%</output></div>`
+    : f.kind==='tempslider'
+    /* Zero is not a temperature here, it is "off", so the readout says so
+       rather than showing a number the printer will never go to. */
+    ? `<div class="sl"><input type="range" min="${f.min}" max="${f.max}" step="${f.step}"
+         value="${f.effective}" data-k="${f.key}" data-def="${f.effective}" data-temp="1">
+       <output>${Number(f.effective)?f.effective+'&deg;C':'off'}</output></div>`
     : f.kind==='enum'&&f.options.length
     ? `<select data-k="${f.key}"><option value="">${f.effective}</option>`+
       f.options.map(o=>`<option value="${o}">${o}</option>`).join('')+`</select>`
@@ -771,7 +815,11 @@ function loadPalette(){api('/api/palette',{printer:S.printer}).then(r=>{S.palett
   `<div class="swhead">Blends</div><div class="sw">${blends.map(chip).join('')}</div>`;});}
 document.getElementById('advgrid').oninput=e=>{
  if(e.target.type==='range'){const o=e.target.parentNode.querySelector('output');
-  if(o)o.textContent=e.target.value+'%';}};
+  if(!o)return;
+  /* A temperature slider is not a percentage, and its zero is "off" rather
+     than nought degrees. The readout has to say which it is. */
+  if(e.target.dataset.temp)o.innerHTML=Number(e.target.value)?e.target.value+'&deg;C':'off';
+  else o.textContent=e.target.value+'%';}};
 document.getElementById('advgrid').onclick=e=>{const b=e.target.closest('.i');
  if(!b)return; const h=document.getElementById(b.dataset.h);
  if(h) h.classList.toggle('on');};
