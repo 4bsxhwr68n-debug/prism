@@ -114,6 +114,22 @@ A support you did not need costs material, time and a scarred surface, so
 nothing is added without a reason you can read. `--supports on` and `off`
 override it.
 
+## The nozzle actually fitted
+
+Every profile here used to be built for a 0.4mm nozzle and nothing said so. A
+project built for a 0.6 came back as 0.4 silently, with line widths, flow and
+speeds all computed for a nozzle that was not on the machine.
+
+The window asks which nozzle is fitted, and the command line takes `--nozzle
+0.6`. **21 of the 24 printers** have profiles for more than one size, up to
+five on the Voron. A printer with only one does not show the control, because
+a menu with a single entry is furniture.
+
+If the project you are converting declares a different nozzle from the one you
+are targeting, Prism says so and names the flag that fixes it. 0.4 is still the
+default and still the bare printer key, so every command and saved preference
+means exactly what it did before.
+
 ## Cancelling one object mid print
 
 A plate of six, and one of them lifts. Object skipping lets you cancel that one
@@ -349,6 +365,19 @@ In a release build the command is `Prism.exe --engine ...` on Windows and
 `./release.sh v1.0.4` builds everything at once. The macOS script needs macOS,
 because `osacompile` and `codesign` are macOS tools. The engine also runs on its
 own: `python3 engine/optimise3mf.py --interactive yourfile.3mf`.
+
+## When your slicer is newer than Prism
+
+Prism's printer data is a snapshot of four vendors who keep shipping changes,
+and a stale snapshot is not a harmless thing. Two printers in an earlier
+release told PLA to print on an unheated bed, and a third kept object skipping
+switched off months after its maker turned it on. Neither announced itself.
+
+So if the vendor's own slicer is installed on the same machine, Prism compares
+its profile dates against the moment its own data was baked, and says when the
+slicer is newer. Nothing is read from the live tree and nothing is wrong when
+it says this. It is a note that the decisions being made come from the older
+copy.
 
 ## Rebuilding the printer data
 

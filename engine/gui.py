@@ -281,7 +281,8 @@ def printers():
         if '->' in label:
             label, sl = label.split('->', 1)
             sl = sl.strip()
-        rows.append({'key': key,
+        rows.append({'nozzles': _nozzles_of(key),
+                     'key': key,
                      'label': re.sub(r'\s*\[.*\]\s*$', '', label).strip(),
                      'spectrum': spectrum, 'slicer': sl})
     return rows
@@ -438,6 +439,15 @@ def _first(v):
     return v
 
 
+def _nozzles_of(key):
+    """Which nozzles this printer has a profile for, from the baked index."""
+    try:
+        with open(os.path.join(HERE, 'data', 'index.json'), encoding='utf-8') as fh:
+            return json.load(fh)['printers'][key].get('nozzles', ['0.4'])
+    except Exception:
+        return ['0.4']
+
+
 def skip_state(tpl, defaults):
     """Where this printer stands on cancelling objects part way through.
 
@@ -456,12 +466,13 @@ def skip_state(tpl, defaults):
     }
 
 
-def settings_for(key):
+def settings_for(key, nozzle=None):
     """What this printer ships, what Prism changes, and what each may be set to.
 
     Read straight from the baked profile rather than parsed out of CLI output,
     so the controls can never drift from what the engine will accept."""
-    path = os.path.join(HERE, 'data', 'printers', key + '.json')
+    name = key if not nozzle or str(nozzle) == '0.4' else '%s@%s' % (key, nozzle)
+    path = os.path.join(HERE, 'data', 'printers', name + '.json')
     if not os.path.exists(path):
         return {'rows': [], 'skip': None}
     with open(path, encoding='utf-8') as fh:
@@ -688,7 +699,10 @@ guess them.</p>
 <div id="impbody"></div></div>
 
 <div class="card off" id="c2"><div class="step"><div class="num">2</div><h2>Printer</h2></div>
-<select id="printer"></select></div>
+<select id="printer"></select>
+<label class="lbl" for="nozzle" id="nozzlelbl" style="margin:14px 0 0;display:none">Nozzle fitted</label>
+<select id="nozzle" style="display:none;width:auto;min-width:170px"></select>
+<p class="hint" id="nozzlehint" style="display:none"></p></div>
 
 <div class="card off" id="c3"><div class="step"><div class="num">3</div><h2>Model analysis</h2></div>
 <div class="row" style="margin-bottom:11px">
@@ -800,7 +814,7 @@ const api=(p,b)=>fetch(p+'?t='+T,{method:b?'POST':'GET',headers:{'Content-Type':
      server's own words so the banner shows the actual cause. */
   if(r&&r.ok===false&&r.text)throw new Error(r.text);
   return r;});
-let S={files:[],printer:null,mode:'balanced',spectrum:false,colour:null,palette:[],spectrumOk:false};
+let S={files:[],printer:null,nozzle:'0.4',mode:'balanced',spectrum:false,colour:null,palette:[],spectrumOk:false};
 /* The questions card. Answers come from the engine, so the window and the
    command line can never drift apart on what a setting means. */
 const ask=(btn,inp,out,ep,after)=>{
@@ -880,6 +894,7 @@ api('/api/printers').then(r=>{const s=document.getElementById('printer');
  s.innerHTML='<option value="">Select a printer…</option>'+r.printers.map(p=>
   `<option value="${p.key}" data-s="${p.spectrum?1:0}" data-sl="${p.slicer||''}">${p.label}${p.spectrum?'  ·  Full Spectrum':''}</option>`).join('');
  s.onchange=()=>{S.printer=s.value||null;
+   showNozzles(r.printers.find(p=>p.key===s.value));
   S.spectrumOk=s.selectedOptions[0]&&s.selectedOptions[0].dataset.s==='1';
   S.slicer=(s.selectedOptions[0]&&s.selectedOptions[0].dataset.sl)||'';
   document.getElementById('gohint').textContent=S.slicer?('Opens in '+S.slicer):'';
@@ -888,6 +903,27 @@ api('/api/printers').then(r=>{const s=document.getElementById('printer');
    document.getElementById('fsbody').style.display='none';}
   else loadPalette();
   loadSettings();refresh();analyse();};});
+
+/* Which nozzle is fitted. Hidden for a printer that only has one profile,
+   because a control with a single option is furniture. Changing it reloads
+   everything downstream: the settings, the palette and the analysis all belong
+   to a nozzle, not just to a printer. */
+function showNozzles(p){
+ const sel=document.getElementById('nozzle'), lbl=document.getElementById('nozzlelbl'),
+       hint=document.getElementById('nozzlehint');
+ const list=(p&&p.nozzles)||[];
+ if(list.length<2){
+  sel.style.display=lbl.style.display=hint.style.display='none';
+  S.nozzle=list[0]||'0.4'; return;}
+ sel.innerHTML=list.map(n=>`<option value="${n}"${n==='0.4'?' selected':''}>${n}mm${n==='0.4'?' (standard)':''}</option>`).join('');
+ sel.style.display=lbl.style.display=hint.style.display='';
+ S.nozzle=sel.value;
+ hint.textContent='Pick the nozzle actually fitted to the machine. Line widths, '
+  +'flow and speeds are all computed from it, so a project built for one nozzle '
+  +'and printed with another comes out wrong in ways that look like a badly '
+  +'tuned printer.';
+ sel.onchange=()=>{S.nozzle=sel.value;loadSettings();
+  if(S.spectrumOk)loadPalette(); refresh(); analyse();};}
 
 /* What this printer can be said to do about cancelling objects. A profile that
    enables it proves the firmware can, because no vendor ships gcode their own
@@ -919,7 +955,7 @@ function showSkip(sk){
 function loadSettings(){
  const wait=document.getElementById('advwait');
  if(!S.printer){wait.hidden=false;document.getElementById('advgrid').innerHTML='';return;}
- api('/api/settings',{printer:S.printer}).then(r=>{
+ api('/api/settings',{printer:S.printer,nozzle:S.nozzle}).then(r=>{
   wait.hidden=!!(r.rows&&r.rows.length);
   if(!r.rows||!r.rows.length){
    wait.textContent='No settings could be read for this printer.';
@@ -963,7 +999,7 @@ function collectSets(){const out=[];
   l=l.trim(); if(l&&l.includes('=')) out.push(l);});
  return out;}
 
-function loadPalette(){api('/api/palette',{printer:S.printer}).then(r=>{S.palette=r.palette;
+function loadPalette(){api('/api/palette',{printer:S.printer,nozzle:S.nozzle}).then(r=>{S.palette=r.palette;
  const chip=c=>`<button class="chip" data-c="${c.id}"><div class="dot" style="background:${c.hex}"></div>${c.label}</button>`;
  const solids=r.palette.filter(c=>c.solid), blends=r.palette.filter(c=>!c.solid);
  document.getElementById('swwrap').innerHTML=
@@ -1099,6 +1135,7 @@ document.getElementById('go').onclick=()=>{const g=document.getElementById('go')
    spectrumStep:(S.spectrum?(document.getElementById('fsstep').value||null):null),
    supports:document.getElementById('sup').checked?'auto':null,
    skipObjects:document.getElementById('skip').checked?'on':'off',
+   nozzle:S.nozzle||null,
    units:S.units||null,up:S.up||null,
    orient:S.orient||null}).then(r=>{
   document.getElementById('gohint').textContent='';
@@ -1199,7 +1236,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 self._send(json.dumps(
                     prismupdate.check(force=bool(body.get('force')))))
             elif path == '/api/settings':
-                self._send(json.dumps(settings_for(body.get('printer', ''))))
+                self._send(json.dumps(settings_for(body.get('printer', ''),
+                                                   body.get('nozzle'))))
             elif path == '/api/palette':
                 self._send(json.dumps({'palette': palette(body.get('printer', ''))}))
             elif path == '/api/probe':
@@ -1256,6 +1294,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     args += ['--supports', str(body['supports'])]
                 if body.get('skipObjects'):
                     args += ['--skip-objects', str(body['skipObjects'])]
+                if body.get('nozzle'):
+                    args += ['--nozzle', str(body['nozzle'])]
                 if body.get('spectrumStep'):
                     args += ['--spectrum-step', str(body['spectrumStep'])]
                 if body.get('units'):

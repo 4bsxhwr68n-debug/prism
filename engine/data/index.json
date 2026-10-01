@@ -2,100 +2,229 @@
  "printers": {
   "k2": {
    "label": "Creality K2",
-   "dialect": "cp"
+   "dialect": "cp",
+   "nozzles": [
+    "0.2",
+    "0.4",
+    "0.6",
+    "0.8"
+   ]
   },
   "k2plus": {
    "label": "Creality K2 Plus",
-   "dialect": "cp"
+   "dialect": "cp",
+   "nozzles": [
+    "0.2",
+    "0.4",
+    "0.6",
+    "0.8"
+   ]
   },
   "k2pro": {
    "label": "Creality K2 Pro",
-   "dialect": "cp"
+   "dialect": "cp",
+   "nozzles": [
+    "0.2",
+    "0.4",
+    "0.6",
+    "0.8"
+   ]
   },
   "k1c": {
    "label": "Creality K1C",
-   "dialect": "cp"
+   "dialect": "cp",
+   "nozzles": [
+    "0.4",
+    "0.6",
+    "0.8"
+   ]
   },
   "k1max": {
    "label": "Creality K1 Max",
-   "dialect": "cp"
+   "dialect": "cp",
+   "nozzles": [
+    "0.4",
+    "0.6",
+    "0.8"
+   ]
   },
   "k1se": {
    "label": "Creality K1 SE",
-   "dialect": "cp"
+   "dialect": "cp",
+   "nozzles": [
+    "0.4",
+    "0.6",
+    "0.8"
+   ]
   },
   "ender3v3": {
    "label": "Creality Ender-3 V3",
-   "dialect": "cp"
+   "dialect": "cp",
+   "nozzles": [
+    "0.4",
+    "0.6",
+    "0.8"
+   ]
   },
   "ender3v3ke": {
    "label": "Creality Ender-3 V3 KE",
-   "dialect": "cp"
+   "dialect": "cp",
+   "nozzles": [
+    "0.4"
+   ]
   },
   "hi": {
    "label": "Creality Hi",
-   "dialect": "cp"
+   "dialect": "cp",
+   "nozzles": [
+    "0.2",
+    "0.4",
+    "0.6",
+    "0.8"
+   ]
   },
   "u1": {
    "label": "Snapmaker U1",
    "dialect": "snapmaker",
+   "nozzles": [
+    "0.2",
+    "0.4",
+    "0.6",
+    "0.8"
+   ],
    "spectrum": "Full Spectrum"
   },
   "x1c": {
    "label": "Bambu Lab X1 Carbon",
-   "dialect": "bambu"
+   "dialect": "bambu",
+   "nozzles": [
+    "0.2",
+    "0.4",
+    "0.6",
+    "0.8"
+   ]
   },
   "p1s": {
    "label": "Bambu Lab P1S",
-   "dialect": "bambu"
+   "dialect": "bambu",
+   "nozzles": [
+    "0.2",
+    "0.4",
+    "0.6",
+    "0.8"
+   ]
   },
   "p1p": {
    "label": "Bambu Lab P1P",
-   "dialect": "bambu"
+   "dialect": "bambu",
+   "nozzles": [
+    "0.2",
+    "0.4",
+    "0.6",
+    "0.8"
+   ]
   },
   "a1": {
    "label": "Bambu Lab A1",
-   "dialect": "bambu"
+   "dialect": "bambu",
+   "nozzles": [
+    "0.2",
+    "0.4",
+    "0.6",
+    "0.8"
+   ]
   },
   "a1mini": {
    "label": "Bambu Lab A1 mini",
-   "dialect": "bambu"
+   "dialect": "bambu",
+   "nozzles": [
+    "0.2",
+    "0.4",
+    "0.6",
+    "0.8"
+   ]
   },
   "x1e": {
    "label": "Bambu Lab X1E",
-   "dialect": "bambu"
+   "dialect": "bambu",
+   "nozzles": [
+    "0.2",
+    "0.4",
+    "0.6",
+    "0.8"
+   ]
   },
   "mk4s": {
    "label": "Prusa MK4S",
-   "dialect": "orca"
+   "dialect": "orca",
+   "nozzles": [
+    "0.4",
+    "0.6",
+    "0.8"
+   ]
   },
   "coreone": {
    "label": "Prusa CORE One",
-   "dialect": "orca"
+   "dialect": "orca",
+   "nozzles": [
+    "0.4",
+    "0.6",
+    "0.8"
+   ]
   },
   "neptune4pro": {
    "label": "Elegoo Neptune 4 Pro",
-   "dialect": "orca"
+   "dialect": "orca",
+   "nozzles": [
+    "0.2",
+    "0.4",
+    "0.6",
+    "0.8"
+   ]
   },
   "voron24-300": {
    "label": "Voron 2.4 300",
-   "dialect": "orca"
+   "dialect": "orca",
+   "nozzles": [
+    "0.2",
+    "0.4",
+    "0.6",
+    "0.8",
+    "1.0"
+   ]
   },
   "qidiq1pro": {
    "label": "Qidi Q1 Pro",
-   "dialect": "orca"
+   "dialect": "orca",
+   "nozzles": [
+    "0.2",
+    "0.4",
+    "0.6",
+    "0.8"
+   ]
   },
   "sv06": {
    "label": "Sovol SV06",
-   "dialect": "orca"
+   "dialect": "orca",
+   "nozzles": [
+    "0.4"
+   ]
   },
   "kobra2": {
    "label": "Anycubic Kobra 2",
-   "dialect": "orca"
+   "dialect": "orca",
+   "nozzles": [
+    "0.4"
+   ]
   },
   "ad5x": {
    "label": "Flashforge AD5X",
-   "dialect": "orca"
+   "dialect": "orca",
+   "nozzles": [
+    "0.4",
+    "0.6",
+    "0.8"
+   ]
   }
  },
  "order": [

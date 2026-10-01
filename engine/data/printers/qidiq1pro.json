@@ -3144,5 +3144,12 @@
   "sparse_infill_pattern": "gyroid",
   "support_interface_top_layers": "3",
   "support_top_z_distance": "0.25"
- }
+ },
+ "nozzle": "0.4",
+ "nozzles": [
+  "0.2",
+  "0.4",
+  "0.6",
+  "0.8"
+ ]
 }

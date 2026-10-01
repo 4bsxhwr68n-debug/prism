@@ -96,6 +96,19 @@ DEFAULTS_BY_PRINTER = {
 # for the U1, which would have moved it off Standard and cut its outer wall
 # speed from 200 to 60. That is a decision to take deliberately, not to
 # inherit from somebody else's release notes.
+# Every printer here was baked for a 0.4mm nozzle and nothing said so. A
+# project built for a 0.6 came back as 0.4 with no warning, which is a
+# confidently wrong file, and the vendors ship the other sizes already.
+# 0.4 keeps the bare key, so every existing command and saved preference
+# resolves to exactly what it did before.
+NOZZLES = ('0.2', '0.4', '0.6', '0.8', '1.0')
+DEFAULT_NOZZLE = '0.4'
+
+
+def nozzle_key(key, nozzle):
+    return key if nozzle == DEFAULT_NOZZLE else '%s@%s' % (key, nozzle)
+
+
 PROCESS_PIN = {
  'u1': '0.20mm Standard @Snapmaker U1 (0.4 nozzle)',
 }
@@ -359,21 +372,37 @@ def main():
     os.makedirs(os.path.join(OUT,'printers'), exist_ok=True)
     enum_cache={}
     ok=[]
-    for key,(root,vendor,machine,dialect,label) in REG.items():
+    nozzles_of = {}
+    for key,(root,vendor,machine0,dialect,label) in REG.items():
+      base_dir = os.path.join(root, vendor, 'machine')
+      available = [n for n in NOZZLES
+                   if os.path.exists(os.path.join(
+                       base_dir, machine0.replace(DEFAULT_NOZZLE, n) + '.json'))]
+      if DEFAULT_NOZZLE not in available:
+          available = [DEFAULT_NOZZLE]          # the registry names it, so trust it
+      nozzles_of[key] = available
+      for nozzle in available:
+        machine = machine0.replace(DEFAULT_NOZZLE, nozzle)
+        okey = nozzle_key(key, nozzle)
         try:
             m=resolve(root,vendor,machine)
             pname,pres=pick_process(root,vendor,machine)
             pin=PROCESS_PIN.get(key)
+            if pin and nozzle != DEFAULT_NOZZLE:
+                pin = pin.replace(DEFAULT_NOZZLE, nozzle)
             if pin:
                 pres_pin=compatible(root,vendor,pin,machine)
                 if pres_pin is None:
-                    print(f"[skip] {key}: pinned process {pin!r} is not in this "
-                          f"vendor tree; refusing to substitute one")
-                    continue
-                pname,pres=pin,pres_pin
-            if not pname: print(f"[skip] {key}: no compatible process"); continue
+                    if nozzle == DEFAULT_NOZZLE:
+                        print(f"[skip] {okey}: pinned process {pin!r} is not in "
+                              f"this vendor tree; refusing to substitute one")
+                        continue
+                    pin = None                  # no pin for this nozzle; pick
+                if pin:
+                    pname,pres=pin,pres_pin
+            if not pname: print(f"[skip] {okey}: no compatible process"); continue
             fils=pick_filaments(root,vendor,machine)
-            if 'PLA' not in fils: print(f"[skip] {key}: no PLA filament"); continue
+            if 'PLA' not in fils: print(f"[skip] {okey}: no PLA filament"); continue
             d=DIALECTS[dialect]
             tpl=d['template']()
             overlay(tpl,m)
@@ -400,26 +429,38 @@ def main():
             if key in SPECTRUM:
                 spec=SPECTRUM[key]
                 try:
-                    fr=resolve(root,vendor,spec['preset'])
+                    fr=resolve(root,vendor,
+                               spec['preset'].replace(DEFAULT_NOZZLE, nozzle))
                     fils['PLA-FS']={'id':spec['preset'],
                                     'values':{k:v for k,v in fr.items() if k not in META}}
                     rec['spectrum']={'filament_key':'PLA-FS','label':spec['label'],
                                      'slots':spectrum_slots(root,spec)}
                 except Exception as e:
-                    print(f"[warn] {key}: no spectrum preset ({type(e).__name__}: {e})")
-            DIALECT_OF[key]=dialect
-            json.dump(rec,open(os.path.join(OUT,'printers',key+'.json'),'w'),indent=1)
-            ok.append((key,label,pname,sorted(fils),bed))
+                    if nozzle == DEFAULT_NOZZLE:
+                        print(f"[warn] {okey}: no spectrum preset "
+                              f"({type(e).__name__}: {e})")
+            rec['nozzle']=nozzle
+            rec['nozzles']=available
+            DIALECT_OF[okey]=dialect
+            json.dump(rec,open(os.path.join(OUT,'printers',okey+'.json'),'w'),indent=1)
+            ok.append((okey,label,pname,sorted(fils),bed,key,nozzle))
         except Exception as e:
-            print(f"[skip] {key}: {type(e).__name__}: {e}")
-    json.dump({'printers':{k:dict({'label':l,'dialect':DIALECT_OF.get(k,'')},
-                                  **({'spectrum':SPECTRUM[k]['label']} if k in SPECTRUM else {}))
-                           for k,l,_,_,_ in ok},
-               'order':[k for k,_,_,_,_ in ok]},
+            print(f"[skip] {okey}: {type(e).__name__}: {e}")
+    # The index lists PRINTERS, not printer-and-nozzle combinations: a nozzle is
+    # a property of a printer, not a different machine, and eighty entries in a
+    # dropdown would be a worse answer than the silence it replaces.
+    base = [(k, l, pr, f, bed) for k, l, pr, f, bed, bk, nz in ok
+            if nz == DEFAULT_NOZZLE]
+    json.dump({'printers':{bk:dict({'label':l,'dialect':DIALECT_OF.get(bk,''),
+                                    'nozzles':nozzles_of.get(bk,[DEFAULT_NOZZLE])},
+                                  **({'spectrum':SPECTRUM[bk]['label']} if bk in SPECTRUM else {}))
+                           for k,l,_,_,_,bk,nz in ok if nz==DEFAULT_NOZZLE},
+               'order':[bk for k,_,_,_,_,bk,nz in ok if nz==DEFAULT_NOZZLE]},
               open(os.path.join(OUT,'index.json'),'w'),indent=1)
-    print(f"\nBAKED {len(ok)}/{len(REG)}:")
-    for k,l,p,f,bed in ok:
-        print(f"  {k:12s} {l:24s} bed={bed} process={p[:46]:46s} mats={len(f)}")
+    print(f"\nBAKED {len(base)}/{len(REG)} printers, {len(ok)} with nozzles:")
+    for k,l,pr,f,bed in base:
+        nz = ' '.join(nozzles_of.get(k, []))
+        print(f"  {k:12s} {l:24s} bed={bed} nozzles={nz:24s} mats={len(f)}")
 
 if __name__=='__main__':
     main()

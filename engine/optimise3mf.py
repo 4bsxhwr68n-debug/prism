@@ -61,17 +61,103 @@ MODES = {  # global layer height, dome-object layer height
 }
 
 
+# Where each dialect's slicer keeps its profiles, if it is installed. Used only
+# to answer "is your slicer newer than the data I was built with", never read
+# for values: the baked data is the source of truth and a half-read live tree
+# would be worse than a stale one.
+SLICER_PROFILES = {
+    'snapmaker': ('Snapmaker Orca',
+                  '/Applications/Snapmaker Orca.app/Contents/Resources/profiles'),
+    'cp': ('Creality Print',
+           '/Applications/Creality Print.app/Contents/Resources/profiles'),
+    'bambu': ('Bambu Studio',
+              '/Applications/BambuStudio.app/Contents/Resources/profiles'),
+}
+
+
+def profile_drift(rec):
+    """Is the slicer on this machine newer than the data Prism carries.
+
+    Prism's printer data is a snapshot of four vendors who keep shipping
+    changes, and a stale snapshot is how two printers came to tell PLA to print
+    on an unheated bed and how a third kept object skipping switched off after
+    its maker turned it on. None of that announced itself; it was found by
+    accident, twice.
+
+    So when the vendor's own slicer is sitting on the same machine, its profile
+    files are compared against the moment this data was baked. A newer tree is
+    not an error and nothing is read from it, but it is worth saying, because
+    everything downstream is being decided from the older copy."""
+    name_path = SLICER_PROFILES.get(rec.get('dialect') or '')
+    if not name_path:
+        return None
+    name, root = name_path
+    if not os.path.isdir(root):
+        return None
+    try:
+        baked = os.path.getmtime(os.path.join(DATA, 'index.json'))
+    except OSError:
+        return None
+    newest = 0.0
+    for dirpath, _dirs, files in os.walk(root):
+        for fn in files:
+            if not fn.endswith('.json'):
+                continue
+            try:
+                newest = max(newest, os.path.getmtime(os.path.join(dirpath, fn)))
+            except OSError:
+                pass
+        if newest > baked:
+            break               # one newer file is the whole answer
+    if newest <= baked:
+        return None
+    days = int((newest - baked) / 86400)
+    return ('%s on this machine has profiles %s newer than the data Prism was '
+            'built with. Nothing here is wrong because of that, but a setting '
+            'the maker has changed since would not be reflected. Worth a look '
+            'if something seems off.'
+            % (name, ('%d days' % days) if days else 'hours'))
+
+
 def load_index():
     with open(os.path.join(DATA, 'index.json'), encoding='utf-8') as f:
         return json.load(f)
 
 
-def load_printer(key):
-    p = os.path.join(DATA, 'printers', key + '.json')
+DEFAULT_NOZZLE = '0.4'
+
+
+def load_printer(key, nozzle=None):
+    """The profile for a printer, and for the nozzle actually fitted to it.
+
+    A nozzle is a property of a printer rather than a different machine, so the
+    0.4 file keeps the bare key and every saved preference and old command line
+    still resolves to what it always did. Other sizes live beside it as
+    key@size."""
+    nozzle = str(nozzle or DEFAULT_NOZZLE)
+    name = key if nozzle == DEFAULT_NOZZLE else '%s@%s' % (key, nozzle)
+    p = os.path.join(DATA, 'printers', name + '.json')
     if not os.path.exists(p):
+        base = os.path.join(DATA, 'printers', key + '.json')
+        if os.path.exists(base):
+            have = json.load(open(base, encoding='utf-8')).get(
+                'nozzles', [DEFAULT_NOZZLE])
+            sys.exit("the %s has no %smm profile. It takes: %s"
+                     % (key, nozzle, ', '.join('%smm' % n for n in have)))
         sys.exit(f"unknown printer '{key}'. Run with --list to see keys")
     with open(p, encoding='utf-8') as f:
         return json.load(f)
+
+
+def source_nozzle(cfg):
+    """What nozzle the incoming project was built for, if it says."""
+    v = (cfg or {}).get('nozzle_diameter')
+    if isinstance(v, list):
+        v = v[0] if v else None
+    try:
+        return '%g' % float(v)
+    except (TypeError, ValueError):
+        return None
 
 
 def norm_type(t):
@@ -2108,6 +2194,18 @@ def build_project_settings(src, rec, single, plan, notes, spectrum=None,
         notes.append(f"{len(changed) + len(changed_fil)} setting(s) marked as "
                      "modified so the slicer keeps them")
 
+    # A project built for one nozzle, converted for another, is a confidently
+    # wrong file: line widths, flow and speeds are all computed for a nozzle
+    # that is not fitted. Every profile here was 0.4 and nothing said so, which
+    # made this the quietest fault in the tool.
+    want_nz = _first_val(tpl.get('nozzle_diameter'))
+    src_nz = source_nozzle(src)
+    if src_nz and want_nz and abs(float(src_nz) - float(want_nz)) > 1e-9:
+        notes.append('NOZZLE: this project was built for a %smm nozzle and is '
+                     'being converted for %smm. Line widths, flow and speeds '
+                     'will all be for %smm. If your printer has a %smm fitted, '
+                     'pass --nozzle %s.'
+                     % (src_nz, want_nz, want_nz, src_nz, src_nz))
     if skip_objects is not None:
         # Object skipping is one setting, exclude_object, and the slicer reads
         # it straight out of the project. Writing it here is the whole of
@@ -2496,7 +2594,12 @@ def convert(src_path, rec, key, mode, single, dome_override, skip_analyse,
 
         print(f"OK -> {out_path}")
         print(f"open in: {slicer_for(rec)}")
-        print(f"printer: {rec['label']}  |  mode: {mode} ({plan['lh']}mm)  |  process: {new_cfg['print_settings_id']}")
+        nz = _first_val(new_cfg.get('nozzle_diameter'))
+        print(f"printer: {rec['label']}  |  nozzle: {nz}mm  |  mode: {mode} "
+              f"({plan['lh']}mm)  |  process: {new_cfg['print_settings_id']}")
+        drift = profile_drift(rec)
+        if drift:
+            print('note: %s' % drift)
         fmap = ", ".join(f"{i+1}:{p}" for i, p in enumerate(new_cfg['filament_settings_id'][:4]))
         print(f"filaments ({nslots}): {fmap}")
         for n_ in notes: print("note: " + n_)
@@ -2624,6 +2727,9 @@ def main():
                     help='say which way up needs the least support')
     ap.add_argument('--orient-apply', action='store_true', dest='orient_apply',
                     help='and turn it for you')
+    ap.add_argument('--nozzle', default=None,
+                    help='nozzle fitted to the target printer, eg 0.6 '
+                         '(default 0.4)')
     ap.add_argument('--skip-objects', choices=['on', 'off'], default=None,
                     help='let the printer cancel individual objects mid print')
     ap.add_argument('--supports', choices=['auto', 'on', 'off'], default=None,
@@ -2655,7 +2761,7 @@ def main():
     if a.list_settings:
         if not a.printer:
             ap.error('--list-settings needs --printer')
-        rec = load_printer(a.printer)
+        rec = load_printer(a.printer, a.nozzle)
         tpl, enums = rec['template'], rec['enums']
         print("short flags:")
         for flag, key in sorted(QUICK_SETTINGS.items()):
@@ -2675,12 +2781,12 @@ def main():
         print(json.dumps(mesh_info([os.path.abspath(f) for f in a.files])))
         return
     if a.fix:
-        rec = load_printer(a.printer) if a.printer else None
+        rec = load_printer(a.printer, a.nozzle) if a.printer else None
         for line in diagnose(a.fix, [os.path.abspath(f) for f in a.files], rec):
             print(line)
         return
     if a.explain:
-        rec = load_printer(a.printer) if a.printer else None
+        rec = load_printer(a.printer, a.nozzle) if a.printer else None
         for line in explain(a.explain, rec):
             print(line)
         return
@@ -2699,7 +2805,7 @@ def main():
         if not a.files:
             ap.error('--colour-preview needs a file')
         for line in colour_preview([os.path.abspath(f) for f in a.files],
-                                   load_printer(a.printer),
+                                   load_printer(a.printer, a.nozzle),
                                    parse_biases(a.spectrum_biases)):
             print(line)
         return
@@ -2709,7 +2815,7 @@ def main():
     if a.spectrum_list:
         if not a.printer:
             ap.error('--spectrum-list needs --printer')
-        rec = load_printer(a.printer)
+        rec = load_printer(a.printer, a.nozzle)
         if not rec.get('spectrum'):
             ap.error("%s has no colour blending" % rec['label'])
         pal = spectrum_palette(rec, len(rec['spectrum']['slots']),
@@ -2735,7 +2841,7 @@ def main():
             print(f"  {i:2d}) {idx['printers'][k]['label']}")
         sel = input("Printer number: ").strip()
         key = keys[int(sel) - 1]
-        rec = load_printer(key)
+        rec = load_printer(key, a.nozzle)
         run_report(a.files, rec, a.no_analyse, a.orient or a.orient_apply,
                    a.units, a.up)
         m = input("Mode [1=speed 2=balanced 3=quality] (2): ").strip() or '2'
@@ -2756,7 +2862,7 @@ def main():
         if not a.printer:
             ap.error('--printer is required (or use --interactive / --list)')
         key = a.printer
-        rec = load_printer(key)
+        rec = load_printer(key, a.nozzle)
         if a.report:
             run_report(a.files, rec, a.no_analyse, a.orient or a.orient_apply,
                    a.units, a.up)
