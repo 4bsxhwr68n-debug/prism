@@ -114,6 +114,28 @@ A support you did not need costs material, time and a scarred surface, so
 nothing is added without a reason you can read. `--supports on` and `off`
 override it.
 
+## Cancelling one object mid print
+
+A plate of six, and one of them lifts. Object skipping lets you cancel that one
+from the printer and let the other five finish, instead of losing the plate or
+watching a failure drag a nozzle through it for another three hours.
+
+It is one setting, `exclude_object`, and the slicer reads it straight out of
+the project, so Prism writing it is the whole of carrying it across. The window
+asks on every print and the command line takes `--skip-objects on` or `off`.
+
+Prism only claims a printer can do it when that printer's own profile enables
+it, which is true of 19 of the 24, because no vendor ships gcode their firmware
+rejects. Where a profile has it off, that is either a printer which cannot or a
+profile that predates it being able to, and those are indistinguishable from
+here, so the window says exactly that rather than implying the printer is
+incapable. Turning it on there may produce a job the printer refuses rather
+than ignores, which is worth finding out on something small.
+
+The **Snapmaker U1 has it on**: Snapmaker's current profile enables it on the
+very preset Prism pins, and the 0 Prism shipped was baked from an older version
+of their slicer.
+
 ## Which way up
 
 `--orient` says which orientation needs the least support and by how much.

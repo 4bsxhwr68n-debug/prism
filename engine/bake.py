@@ -81,7 +81,12 @@ DEFAULTS_ALL = {
 # panel shows it as a Prism change and the conversion notes say so; it is not
 # passed off as the vendor's number.
 DEFAULTS_BY_PRINTER = {
- 'u1': {'textured_plate_temp': '50'},   # first layer follows it at runtime
+ 'u1': {'textured_plate_temp': '50',    # first layer follows it at runtime
+        # Snapmaker's CURRENT profiles set this to 1 for the U1, on the very
+        # preset pinned below. The 0 we shipped was baked from an older Orca,
+        # so this is stale data being corrected rather than a vendor value
+        # being overridden.
+        'exclude_object': '1'},
 }
 
 # Which process preset a printer must use, where leaving it to pick_process

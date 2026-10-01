@@ -1923,7 +1923,8 @@ def keep_first_layer_in_step(out, tpl, notes):
 
 
 def build_project_settings(src, rec, single, plan, notes, spectrum=None,
-                           keep_source=False, overrides=None, supports=None):
+                           keep_source=False, overrides=None, supports=None,
+                           skip_objects=None):
     tpl = rec['template']
     out = dict(tpl)
     fil_table = rec['filaments']
@@ -2107,6 +2108,17 @@ def build_project_settings(src, rec, single, plan, notes, spectrum=None,
         notes.append(f"{len(changed) + len(changed_fil)} setting(s) marked as "
                      "modified so the slicer keeps them")
 
+    if skip_objects is not None:
+        # Object skipping is one setting, exclude_object, and the slicer reads
+        # it straight out of the project. Writing it here is the whole of
+        # "carry it into the slicer": there is nothing else to carry.
+        want = '1' if skip_objects == 'on' else '0'
+        cur = out.get('exclude_object')
+        cur = cur[0] if isinstance(cur, list) and cur else cur
+        if str(cur) != want:
+            out['exclude_object'] = want
+            notes.append('objects: skipping individual objects mid print is '
+                         'now %s.' % ('on' if want == '1' else 'off'))
     fix_unheated_bed(out, notes, rec['label'])
     keep_first_layer_in_step(out, tpl, notes)
     out['version'] = rec['project_version']
@@ -2313,7 +2325,7 @@ def _check_workspace():
 
 def convert(src_path, rec, key, mode, single, dome_override, skip_analyse,
             out_path=None, spectrum=None, keep_source=False, overrides=None,
-            supports=None, orient=False):
+            supports=None, orient=False, skip_objects=None):
     stem = re.sub(r'\.3mf$', '', os.path.basename(src_path), flags=re.I)
     suffix = key.upper() + ('-FS' if spectrum else '')
     out_path = out_path or os.path.join(os.path.dirname(src_path),
@@ -2367,7 +2379,8 @@ def convert(src_path, rec, key, mode, single, dome_override, skip_analyse,
             report.extend(sup_why)
         new_cfg, nslots = build_project_settings(src_cfg, rec, single, plan,
                                                  notes, spectrum, keep_source,
-                                                 overrides, sup_cfg)
+                                                 overrides, sup_cfg,
+                                                 skip_objects)
         os.makedirs(os.path.dirname(sp), exist_ok=True)
         json.dump(new_cfg, open(sp, 'w', encoding='utf-8', newline='\n'), indent=4)
 
@@ -2611,6 +2624,8 @@ def main():
                     help='say which way up needs the least support')
     ap.add_argument('--orient-apply', action='store_true', dest='orient_apply',
                     help='and turn it for you')
+    ap.add_argument('--skip-objects', choices=['on', 'off'], default=None,
+                    help='let the printer cancel individual objects mid print')
     ap.add_argument('--supports', choices=['auto', 'on', 'off'], default=None,
                     help='look at the model and add supports only where they are '
                          'actually needed')
@@ -2844,7 +2859,8 @@ def main():
         convert(src, rec, key, mode, single, a.dome,
                 a.no_analyse, out_path, spectrum, a.keep_source, overrides,
                 a.supports,
-                'apply' if a.orient_apply else ('suggest' if a.orient else None))
+                'apply' if a.orient_apply else ('suggest' if a.orient else None),
+                a.skip_objects)
 
 
 if __name__ == '__main__':

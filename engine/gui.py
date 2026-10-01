@@ -438,6 +438,24 @@ def _first(v):
     return v
 
 
+def skip_state(tpl, defaults):
+    """Where this printer stands on cancelling objects part way through.
+
+    The honest signal is the profile's own value. A printer whose profile
+    enables it can certainly do it, because no vendor ships gcode their own
+    firmware rejects. A profile with it off is the ambiguous case: either the
+    firmware cannot, or the profile predates it being able to, and from here
+    those two look identical. So the page says which case it is instead of
+    pretending to know."""
+    vendor = _first(tpl.get('exclude_object'))
+    ours = defaults.get('exclude_object')
+    return {
+        'on': str(ours if ours is not None else vendor) == '1',
+        'vendorOn': str(vendor) == '1',
+        'prism': ours is not None,
+    }
+
+
 def settings_for(key):
     """What this printer ships, what Prism changes, and what each may be set to.
 
@@ -445,7 +463,7 @@ def settings_for(key):
     so the controls can never drift from what the engine will accept."""
     path = os.path.join(HERE, 'data', 'printers', key + '.json')
     if not os.path.exists(path):
-        return {'rows': []}
+        return {'rows': [], 'skip': None}
     with open(path, encoding='utf-8') as fh:
         d = json.load(fh)
     tpl, enums, defaults = d['template'], d.get('enums', {}), d.get('defaults', {})
@@ -534,7 +552,7 @@ def settings_for(key):
             'effective': defaults.get(bk, cur),
             'prism': defaults.get(bk),
             'options': []})
-    return {'rows': rows}
+    return {'rows': rows, 'skip': skip_state(tpl, defaults)}
 
 
 PAGE = r"""<!doctype html><html><head><meta charset="utf-8">
@@ -710,6 +728,11 @@ actually needed, and add only those</span></label>
 reaches, how steep it is and how high it sits. Anything the printer can bridge on its
 own is left alone.</p></div>
 
+<div class="card" id="cskip"><div class="step"><div class="num">6</div><h2>Object skipping</h2></div>
+<label class="tog"><input type="checkbox" id="skip"><span>Let the printer cancel
+individual objects part way through</span></label>
+<p class="hint" id="skiphint">Select a printer to see whether it can do this.</p></div>
+
 <div class="card" id="chelp"><details id="helpd"><summary>Questions</summary>
 <p class="hint">A printer profile carries hundreds of settings and the slicer
 explains almost none of them. Ask about any of them by the name you know it by.</p>
@@ -866,6 +889,33 @@ api('/api/printers').then(r=>{const s=document.getElementById('printer');
   else loadPalette();
   loadSettings();refresh();analyse();};});
 
+/* What this printer can be said to do about cancelling objects. A profile that
+   enables it proves the firmware can, because no vendor ships gcode their own
+   printer rejects. A profile with it off cannot be told apart, from here, from
+   one that simply predates the feature, so the page says so rather than
+   implying the printer is incapable. */
+function showSkip(sk){
+ const box=document.getElementById('skip'), hint=document.getElementById('skiphint');
+ if(!sk){box.checked=false;box.disabled=true;
+  hint.textContent='Select a printer to see whether it can do this.';return;}
+ box.disabled=false; box.checked=!!sk.on;
+ if(sk.prism&&sk.on){
+  hint.innerHTML='Prism turns this on for this printer. Its current profile from '
+   +'the maker enables it, and the one Prism shipped predates that. With it on you '
+   +'can cancel a single object from the printer while the rest of the plate carries '
+   +'on, which is what you want when one part lifts and the other five are fine.';
+ } else if(sk.vendorOn){
+  hint.innerHTML='This printer\'s own profile enables it, so the firmware supports it. '
+   +'You can cancel a single object from the printer while the rest of the plate '
+   +'carries on, which is what you want when one part lifts and the other five are fine.';
+ } else {
+  hint.innerHTML='<b>This printer\'s profile does not enable it.</b> That either means '
+   +'the firmware cannot cancel objects, or that the profile predates it being able to, '
+   +'and the two are indistinguishable from here. Turning it on writes the setting, but '
+   +'a printer that does not understand the instruction may refuse the job rather than '
+   +'ignore it. Worth trying on something small first.';
+ }}
+
 function loadSettings(){
  const wait=document.getElementById('advwait');
  if(!S.printer){wait.hidden=false;document.getElementById('advgrid').innerHTML='';return;}
@@ -875,6 +925,7 @@ function loadSettings(){
    wait.textContent='No settings could be read for this printer.';
    document.getElementById('advgrid').innerHTML='';return;}
   document.getElementById('advcount').textContent=' ('+r.rows.length+')';
+  showSkip(r.skip);
   document.getElementById('advgrid').innerHTML=r.rows.map((f,i)=>{
    const mark=f.prism?' <span class="mark">Prism</span>':'';
    const ctl=f.kind==='pctslider'
@@ -1047,6 +1098,7 @@ document.getElementById('go').onclick=()=>{const g=document.getElementById('go')
    spectrum:S.spectrum,colour:S.colour,sets:collectSets(),
    spectrumStep:(S.spectrum?(document.getElementById('fsstep').value||null):null),
    supports:document.getElementById('sup').checked?'auto':null,
+   skipObjects:document.getElementById('skip').checked?'on':'off',
    units:S.units||null,up:S.up||null,
    orient:S.orient||null}).then(r=>{
   document.getElementById('gohint').textContent='';
@@ -1202,6 +1254,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
                         args += ['--spectrum-colour', str(body['colour'])]
                 if body.get('supports'):
                     args += ['--supports', str(body['supports'])]
+                if body.get('skipObjects'):
+                    args += ['--skip-objects', str(body['skipObjects'])]
                 if body.get('spectrumStep'):
                     args += ['--spectrum-step', str(body['spectrumStep'])]
                 if body.get('units'):
